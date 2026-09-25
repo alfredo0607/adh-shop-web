@@ -1,0 +1,34 @@
+.hero {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-7) var(--space-5);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgb(201 165 123 / 0.35), transparent 60%),
+    var(--color-surface);
+}
+
+.eyebrow {
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  max-width: 18ch;
+  font-size: var(--text-3xl);
+}
+
+.lead {
+  max-width: 44ch;
+  color: var(--color-text-muted);
+  font-size: var(--text-lg);
+}
+
+@media (min-width: 600px) {
+  .hero {
+    padding: var(--space-8) var(--space-7);
+  }
+}

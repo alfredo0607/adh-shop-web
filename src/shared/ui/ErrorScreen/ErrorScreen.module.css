@@ -1,0 +1,36 @@
+.screen {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  max-width: 32rem;
+  margin-inline: auto;
+  padding: var(--space-8) var(--page-gutter);
+  text-align: center;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font-size: 1.75rem;
+}
+
+.title {
+  font-size: var(--text-2xl);
+}
+
+.body {
+  color: var(--color-text-muted);
+  font-size: var(--text-lg);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}

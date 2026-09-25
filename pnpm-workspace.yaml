@@ -1,0 +1,16 @@
+# Declares this repository as its own workspace root. Without this file pnpm
+# walks up the directory tree and may resolve against an unrelated workspace.
+packages:
+  - .
+
+# Explicit allow-list for install scripts. Any package that wants to execute
+# code during `pnpm install` must be listed here as a conscious decision.
+allowBuilds:
+  # Native binaries that Vite, SWC and Jest's resolver download at install time.
+  esbuild: true
+  '@swc/core': true
+  unrs-resolver: true
+  # Copies a service worker for browser mocking. Tests run MSW in Node.
+  msw: false
+  # Optional native file watcher; a JavaScript fallback exists.
+  '@parcel/watcher': false
