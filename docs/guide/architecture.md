@@ -2,19 +2,44 @@
 
 ## Technology choices
 
-| Concern       | Choice                                                           | Why                                                                                                                                          |
-| ------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| UI            | **React 19 + TypeScript (strict)**                               | The brief allows React or Vue. Strict TypeScript matches the API and turns contract drift into a compile error.                              |
-| Build         | **Vite**                                                         | Instant dev server and small, hashed production bundles.                                                                                     |
-| State         | **Redux Toolkit** (slices)                                       | The brief requires Redux following Flux. Slices are Redux without the boilerplate.                                                           |
-| Server data   | **RTK Query**                                                    | Caching, loading and error states, invalidation, and polling for the payment outcome, with no hand-written fetch code.                       |
-| Orchestration | **One `createAsyncThunk`: `payOrder`**                           | See [When to use a thunk](#when-to-use-a-thunk).                                                                                             |
-| Persistence   | **redux-remember**, with an allowlist                            | Lighter and better maintained than redux-persist. Only an allowlisted slice is stored; see [state.md](./state.md).                           |
-| API types     | **`@rtk-query/codegen-openapi`** from the API's `/api/docs-json` | Endpoints and types are generated from the live contract, so a breaking API change fails the build instead of a user's checkout.             |
-| Routing       | **React Router**                                                 | Each step has a URL, so reloading and the back button behave.                                                                                |
-| Validation    | **zod** + pure functions (Luhn, card brand, expiry)              | Pure and deterministic, cheap to test to 100%.                                                                                               |
-| Styling       | **CSS Modules + CSS custom properties**, flexbox and grid        | The brief rewards CSS skill and favours flexbox and grid. No component library, so the work is visibly ours. See [styling.md](./styling.md). |
-| Tests         | **Jest** + React Testing Library + MSW                           | The brief says "create them with Jest", so Jest it is, even though Vitest would be the Vite default. See [testing.md](./testing.md).         |
+| Concern          | Choice                                                           | Why                                                                                                                                                                                                                                                |
+| ---------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UI               | **React 19 + TypeScript (strict)**                               | The brief allows React or Vue. Strict TypeScript matches the API and turns contract drift into a compile error.                                                                                                                                    |
+| Build            | **Vite**                                                         | Instant dev server and small, hashed production bundles.                                                                                                                                                                                           |
+| State            | **Redux Toolkit** (slices)                                       | The brief requires Redux following Flux. Slices are Redux without the boilerplate.                                                                                                                                                                 |
+| Server data      | **RTK Query**                                                    | Caching, loading and error states, invalidation, and polling for the payment outcome, with no hand-written fetch code.                                                                                                                             |
+| Orchestration    | **One `createAsyncThunk`: `payOrder`**                           | See [When to use a thunk](#when-to-use-a-thunk).                                                                                                                                                                                                   |
+| Persistence      | **redux-remember**, with an allowlist                            | Lighter and better maintained than redux-persist. Only an allowlisted slice is stored; see [state.md](./state.md).                                                                                                                                 |
+| API types        | **`@rtk-query/codegen-openapi`** from the API's `/api/docs-json` | Endpoints and types are generated from the live contract, so a breaking API change fails the build instead of a user's checkout.                                                                                                                   |
+| Routing          | **React Router**                                                 | Each step has a URL, so reloading and the back button behave.                                                                                                                                                                                      |
+| Forms            | **react-hook-form** + **zod** (`@hookform/resolvers`)            | Uncontrolled inputs keep typing fast on phones. Card data stays in the form, out of Redux. One schema validates both the form and the tests. See [forms.md](./forms.md).                                                                           |
+| UI behaviour     | **Radix UI Primitives** (unstyled)                               | Dialog, Toast, Checkbox, Select and Label with correct focus management, keyboard support and ARIA across browsers. **Primitives only**: they ship no styles, so every visual decision is our own CSS. Radix Themes, which is styled, is not used. |
+| Icons            | **lucide-react**, plus the card brands' own marks as local SVGs  | Consistent, tree-shaken line icons. Lucide has no brand logos, so VISA and Mastercard use their official acceptance marks.                                                                                                                         |
+| Error boundaries | **react-error-boundary**                                         | A render crash shows a recovery screen instead of a blank page. See [errors.md](./errors.md).                                                                                                                                                      |
+| Styling          | **CSS Modules + CSS custom properties**, flexbox and grid        | The brief rewards CSS skill and favours flexbox and grid. No CSS framework: styling is ours, on top of unstyled primitives. See [styling.md](./styling.md).                                                                                        |
+| Tests            | **Jest** + React Testing Library + MSW                           | The brief says "create them with Jest", so Jest it is, even though Vitest would be the Vite default. See [testing.md](./testing.md).                                                                                                               |
+
+### Checked against the brief
+
+| The brief says                                                                    | How this stack meets it                                                                                               |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| "ReactJS or VueJS. NO other frameworks are allowed"                               | React is the only application framework. Everything else is a library used inside it, as Redux is                     |
+| "Use of either Redux or Vuex is mandatory, following Flux"                        | Redux Toolkit holds the application state. Form state is local and short-lived on purpose, because it holds card data |
+| "Use CSS frameworks of your preference, but we foster you to use flexbox or grid" | No CSS framework. Radix Primitives brings behaviour, not styles; layout is our own flexbox and grid                   |
+| "Unit tests… created with Jest"                                                   | Jest is the runner; see [testing.md](./testing.md)                                                                    |
+
+## Language
+
+| Audience                                                                                  | Language               | Where                                                          |
+| ----------------------------------------------------------------------------------------- | ---------------------- | -------------------------------------------------------------- |
+| **Developers**: code, identifiers, comments, tests, commits, pull requests, documentation | **English**            | Everywhere in the repository                                   |
+| **Customers**: every text the buyer sees, including error messages and order statuses     | **Spanish (Colombia)** | Only in `src/shared/copy/es-CO.ts`, never inline in components |
+
+- Components take text from the copy catalogue by key, so the storefront could gain a
+  language without touching a component.
+- Money and dates are formatted with the `es-CO` locale: `$ 91.690` and `30 de septiembre`.
+- The document declares `<html lang="es-CO">`, which screen readers and browsers use to
+  pronounce and hyphenate correctly.
 
 ## Folder structure
 
@@ -25,25 +50,29 @@ src/
 ├── app/                    Composition root: store, persistence, router, <App/>
 │   ├── store.ts
 │   ├── persistence.ts      What redux-remember stores, and nothing else
-│   └── router.tsx
+│   ├── listeners.ts        Global error listener (toasts for unexpected failures)
+│   └── router.tsx          Routes, each with an error boundary
 ├── api/
 │   ├── generated/          Endpoints and types generated from the API's OpenAPI document
-│   ├── api.ts              RTK Query base: base URL, tags, normalised errors
+│   ├── api.ts              RTK Query base: base URL, tags, error normalisation
 │   └── gateway.ts          Card tokenisation, sent straight to the payment gateway
 ├── features/
 │   ├── catalog/            Product page, product card, unit selector
 │   ├── checkout/
 │   │   ├── checkoutSlice.ts
 │   │   ├── payOrder.ts     The one thunk
-│   │   ├── validation/     card.ts (Luhn, brand, expiry) · delivery.ts (zod)
+│   │   ├── schemas/        card.ts (Luhn, brand, expiry) · delivery.ts (zod)
 │   │   ├── CheckoutModal/  Card and delivery form
 │   │   └── SummaryBackdrop/
 │   └── order-status/       Final status, polling, delivery details
 ├── shared/
-│   ├── ui/                 Button, Modal, Backdrop, Field, CardBrandIcon, Money, Spinner
-│   ├── lib/                Money formatting, idempotency keys, configuration
+│   ├── ui/                 Our components on Radix Primitives: Dialog, Toast, Checkbox,
+│   │                       Select, Field, Button, Backdrop, CardBrandIcon, Money, Spinner
+│   ├── errors/             AppError, normalisation, error-code → copy key mapping
+│   ├── copy/               es-CO.ts: every customer-facing text
+│   ├── lib/                Formatting, idempotency keys, configuration
 │   └── styles/             tokens.css, reset.css
-└── test/                   MSW handlers, renderWithStore, fixtures
+└── test/                   MSW handlers, renderWithStore, fixtures, jsdom polyfills
 ```
 
 ### Dependency rules
@@ -52,6 +81,8 @@ src/
 - A feature may use `shared/` and `api/`, and may read another feature's **exported
   selectors**, but it never reaches into another feature's files. Cross-feature flow goes
   through the router or the store.
+- Radix is imported **only inside `shared/ui/`**. Features use our components, never Radix
+  directly, so the look and the behaviour stay in one place.
 - `app/` is the only place that knows every feature. It wires them together.
 - Generated code in `api/generated/` is never edited by hand. It is regenerated.
 
@@ -60,13 +91,14 @@ These are enforced with ESLint import rules once the scaffold exists (step 1 of 
 
 ## Where logic goes
 
-| Kind of work                      | Where                           | Example                                                   |
-| --------------------------------- | ------------------------------- | --------------------------------------------------------- |
-| Talking to the API                | RTK Query endpoint              | list products, quote, create a transaction, poll it       |
-| Local state changes               | Slice reducer                   | choose units, save delivery details, reset after an order |
-| A flow of several dependent calls | The `payOrder` thunk            | tokenise the card → pay → mark the payment submitted      |
-| Rules about input                 | Pure functions in `validation/` | Luhn check, brand detection, expiry in the future         |
-| Rendering                         | Components                      | no business rules; they read selectors and dispatch       |
+| Kind of work                      | Where                                        | Example                                                   |
+| --------------------------------- | -------------------------------------------- | --------------------------------------------------------- |
+| Talking to the API                | RTK Query endpoint                           | list products, quote, create a transaction, poll it       |
+| Local state changes               | Slice reducer                                | choose units, save delivery details, reset after an order |
+| A flow of several dependent calls | The `payOrder` thunk                         | tokenise the card → pay → mark the payment submitted      |
+| Rules about input                 | zod schemas and pure functions in `schemas/` | Luhn check, brand detection, expiry in the future         |
+| Turning a failure into a message  | `shared/errors/` + the copy catalogue        | `INSUFFICIENT_STOCK` → "Solo quedan 2 unidades"           |
+| Rendering                         | Components                                   | no business rules; they read selectors and dispatch       |
 
 ### When to use a thunk
 
@@ -79,7 +111,7 @@ component**. There is exactly one in the plan, `payOrder`:
 4. Mark the payment as submitted; the status screen then polls for the outcome.
 
 The thunk calls RTK Query endpoints with `dispatch(endpoint.initiate(...)).unwrap()`; it
-never calls `fetch` itself. A single request is a RTK Query endpoint, never a thunk.
+never calls `fetch` itself. A single request is an RTK Query endpoint, never a thunk.
 Wrapping one request in a thunk is the pre-RTK-Query pattern, and adds code that RTK Query
 already provides.
 
@@ -92,5 +124,6 @@ already provides.
   dev server proxies `/api` to the API, so the browser only ever talks to `localhost` and
   no cross-origin request is made.
 - **Errors** share one envelope, `{ error: { code, message, details }, requestId }`. The UI
-  branches on `code`, never on `message`.
+  branches on `code`, never on `message`, which is in English and meant for developers. See
+  [errors.md](./errors.md).
 - **Money** arrives in integer minor units (COP cents) and is formatted only at render time.

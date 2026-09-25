@@ -76,19 +76,21 @@ everything this decision needs.
 
 ## Errors
 
-The UI branches on the API's `error.code`, never on its message.
+The UI branches on the API's `error.code`, never on its message. How errors are normalised,
+translated into the es-CO copy and presented is defined in [errors.md](./errors.md). This table
+is what each one means for the flow.
 
-| Code                                 | Where         | What the buyer sees and can do                                                  |
-| ------------------------------------ | ------------- | ------------------------------------------------------------------------------- |
-| `INSUFFICIENT_STOCK`                 | quote, create | "Only N left", with units capped to what is available                           |
-| `AMOUNT_MISMATCH`                    | create        | "The total changed", with the summary refreshed to the new total                |
-| `RESERVATION_EXPIRED`                | pay           | "Your reservation expired", and the order starts again                          |
-| `PAYMENT_REJECTED`                   | pay           | "The card could not be processed", back to the card form                        |
-| `TRANSACTION_NOT_PAYABLE`            | pay           | Goes to the status screen: a payment already exists                             |
-| `INVALID_*` (422)                    | create        | The field is highlighted in the form                                            |
-| `PAYMENT_GATEWAY_UNAVAILABLE`, `503` | any           | "We could not reach the payment service", with a retry that reuses the same key |
-| `429 RATE_LIMITED`                   | any           | "Too many attempts", with the retry delay from `Retry-After`                    |
-| Network failure                      | any           | Offline notice; nothing is resubmitted automatically                            |
+| Code                                 | Where         | What the buyer sees and can do                                            |
+| ------------------------------------ | ------------- | ------------------------------------------------------------------------- |
+| `INSUFFICIENT_STOCK`                 | quote, create | "Solo quedan N unidades", with units capped to what is available          |
+| `AMOUNT_MISMATCH`                    | create        | "El total cambió", with the summary refreshed to the new total            |
+| `RESERVATION_EXPIRED`                | pay           | "Tu reserva expiró", and the order starts again                           |
+| `PAYMENT_REJECTED`                   | pay           | "No pudimos procesar la tarjeta", back to the card form                   |
+| `TRANSACTION_NOT_PAYABLE`            | pay           | Goes to the status screen: a payment already exists                       |
+| `INVALID_*` (422)                    | create        | The field is highlighted in the form                                      |
+| `PAYMENT_GATEWAY_UNAVAILABLE`, `503` | any           | "El servicio de pagos no responde", with a retry that reuses the same key |
+| `429 RATE_LIMITED`                   | any           | "Demasiados intentos", with the retry delay from `Retry-After`            |
+| Network failure                      | any           | "Sin conexión"; nothing is resubmitted automatically                      |
 
 ## Final status
 

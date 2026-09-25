@@ -10,6 +10,8 @@ guide disagree, one of them is wrong. Fix whichever it is, in the same pull requ
 | [architecture.md](./architecture.md)   | Technology choices and why, folder structure, dependency rules          |
 | [state.md](./state.md)                 | Where each piece of state lives, what is persisted, and what never is   |
 | [checkout-flow.md](./checkout-flow.md) | The five screens, routes, the payment sequence, resuming after a reload |
+| [forms.md](./forms.md)                 | react-hook-form and zod: the card and delivery schemas, form behaviour  |
+| [errors.md](./errors.md)               | The error convention: normalise, translate to es-CO, present            |
 | [security.md](./security.md)           | Card data, secrets, storage, Content Security Policy                    |
 | [styling.md](./styling.md)             | Design tokens, CSS Modules, mobile-first layout, images, accessibility  |
 | [palette.md](./palette.md)             | The ADH Shop colour palette, the UI role of each colour, contrast       |

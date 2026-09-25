@@ -12,6 +12,16 @@
 Vitest would be the natural pairing with Vite, and it was considered. The brief names Jest,
 so points are not risked on it.
 
+### jsdom setup for Radix
+
+Radix Primitives rely on browser APIs that jsdom does not implement. The shared setup file
+(`src/test/setup.ts`) provides them once, so no test has to:
+
+- `ResizeObserver` (used by Select and positioning)
+- `Element.prototype.hasPointerCapture`, `setPointerCapture`, `releasePointerCapture`
+- `Element.prototype.scrollIntoView`
+- `window.matchMedia` (also used by the reduced-motion styles)
+
 ## Coverage policy
 
 - **Over 80% for statements, branches, functions and lines**, enforced in `jest.config` so CI
@@ -21,14 +31,17 @@ so points are not risked on it.
 
 ## What is tested, by layer
 
-| Layer                          | How                            | Focus                                                                                                       |
-| ------------------------------ | ------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| **Validation** (`validation/`) | Plain unit tests, table-driven | Luhn, brand detection per BIN range, expiry edge cases (this month, last month), every delivery rule        |
-| **Slice**                      | Reducer in, state out          | Each action; reset; that nothing sensitive can enter the state                                              |
-| **Persistence**                | The store's serialised output  | Only `checkout` is written; card fields and the RTK Query cache are absent                                  |
-| **`payOrder` thunk**           | Real store + MSW               | Happy path; each API error code; gateway failure; retry reusing the same idempotency key                    |
-| **Components**                 | React Testing Library          | Loading, error and success states; the brand logo appearing; accessible names                               |
-| **Flows**                      | Rendered app + MSW + router    | Product → pay → approved; declined; reload during payment resumes on the status screen; expired reservation |
+| Layer                    | How                            | Focus                                                                                                       |
+| ------------------------ | ------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| **Schemas** (`schemas/`) | Plain unit tests, table-driven | Luhn, brand detection per BIN range, expiry edge cases (this month, last month), every delivery rule        |
+| **Slice**                | Reducer in, state out          | Each action; reset; that nothing sensitive can enter the state                                              |
+| **Persistence**          | The store's serialised output  | Only `checkout` is written; card fields and the RTK Query cache are absent                                  |
+| **`payOrder` thunk**     | Real store + MSW               | Happy path; each API error code; gateway failure; retry reusing the same idempotency key                    |
+| **Components**           | React Testing Library          | Loading, error and success states; the brand logo appearing; accessible names                               |
+| **Flows**                | Rendered app + MSW + router    | Product → pay → approved; declined; reload during payment resumes on the status screen; expired reservation |
+
+| **Errors** | Unit tests + a store | The normaliser for every source shape, the code-to-copy mapping, the global listener, each error boundary |
+| **Copy** | Unit test | Every error code and form message key exists in `es-CO.ts` |
 
 ## Rules
 

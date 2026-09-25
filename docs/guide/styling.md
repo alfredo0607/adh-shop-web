@@ -54,9 +54,12 @@ are defined in step 1 of the [roadmap](./roadmap.md).
 - **Design tokens as CSS custom properties**: colour, spacing scale, radius, typography,
   shadow, motion. Components use tokens, never raw values, so the whole look changes in one
   file.
-- **Layout with flexbox and grid**, as the brief encourages. No CSS framework or component
-  library: the modal, the backdrop and the form are built here, which is where CSS skill
-  shows.
+- **Layout with flexbox and grid**, as the brief encourages. No CSS framework.
+- **Behaviour from Radix UI Primitives, looks from us.** Dialog, Toast, Checkbox and Select
+  come from Radix Primitives, which ship with no styles at all: they bring focus trapping,
+  keyboard support and ARIA, and every pixel is our own CSS on our tokens. Radix Themes is not
+  used. The summary backdrop has no Radix equivalent and is built from scratch.
+- Radix is wrapped once in `shared/ui/`; features never import it directly.
 - **Mobile first**: base styles target the smallest phone; `min-width` media queries add
   space and columns as the viewport grows.
 
@@ -79,6 +82,18 @@ are defined in step 1 of the [roadmap](./roadmap.md).
 | **Backdrop** (summary)        | Material backdrop pattern: the front layer slides up over the product, which stays visible behind it             |
 | **Card field**                | Groups digits as typed; the brand logo fades in from the BIN; the error appears under the field, not in an alert |
 | **Money**                     | Formats integer cents with `Intl.NumberFormat('es-CO', { currency: 'COP' })`, only at render time                |
+
+## Icons
+
+- **lucide-react** for interface icons: one line weight, sized with a `--icon-size` token,
+  coloured with `currentColor` so an icon always matches its text.
+- Decorative icons are `aria-hidden`; an icon that carries meaning on its own has an
+  accessible label.
+- **Card brands** use their official acceptance marks (VISA, Mastercard) as local SVG
+  components in `CardBrandIcon`, shown at the size and clear space the brands require. Lucide
+  deliberately ships no brand logos.
+- Every status also shows an icon next to its colour (check, cross, clock), so meaning never
+  depends on colour alone.
 
 ## Images
 
