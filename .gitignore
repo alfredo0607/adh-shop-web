@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output and coverage
+dist/
+coverage/
+
+# Local environment
+.env
+.env.local
+.env.*.local
+
+# Editors and OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
