@@ -5,7 +5,9 @@
 The single most important rule in this codebase: **card data never leaves the card form
 except to the payment gateway.**
 
-- The number, expiry, CVC and holder name live in the form component's local state. They are
+- The number, expiry, CVC and holder name live in the form component's local state.
+  Neither persisted slice has anywhere to hold them: the cart stores product ids and units,
+  the checkout the order's items, delivery and status. They are
   never put in Redux, never persisted, never logged, never sent to the ADH Shop API.
 - On submit, `payOrder` sends them directly to the gateway's tokenisation endpoint with the
   public key, and receives a single-use token. Only the token goes to the API.

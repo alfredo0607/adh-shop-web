@@ -2,6 +2,7 @@ import { Heart, Search, UserRound } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 
+import { CartButton } from '@/features/cart/CartButton';
 import { CATEGORIES, CATEGORY_SLUGS } from '@/features/catalog/filters';
 import type { FocusSearchState } from '@/features/catalog/FilterBar';
 import { t } from '@/shared/copy/es-CO';
@@ -64,6 +65,7 @@ export const Header = (): ReactNode => {
             >
               <UserRound aria-hidden />
             </button>
+            <CartButton className={styles.action} />
           </div>
         </div>
 

@@ -13,6 +13,11 @@
  * @type {import('jest').Config}
  */
 export default {
+  // ESM through vm modules plus coverage instrumentation is memory-hungry: a
+  // worker that grows past this is recycled between test files instead of
+  // crashing the run, and half the cores leave room for everything else.
+  workerIdleMemoryLimit: '512MB',
+  maxWorkers: '50%',
   testEnvironment: '<rootDir>/jest.environment.cjs',
   testEnvironmentOptions: { customExportConditions: [''] },
   roots: ['<rootDir>/src'],

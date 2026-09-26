@@ -23,5 +23,26 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: true,
+    rolldownOptions: {
+      output: {
+        // Dependencies change far less often than the app. In chunks of their
+        // own they stay cached across releases and download in parallel with it.
+        codeSplitting: {
+          groups: [
+            {
+              name: 'react',
+              test: /node_modules[\/](react|react-dom|scheduler|react-router)[\/]/,
+              priority: 3,
+            },
+            {
+              name: 'state',
+              test: /node_modules[\/](@reduxjs|react-redux|redux|redux-remember|immer|reselect)[\/]/,
+              priority: 2,
+            },
+            { name: 'ui', test: /node_modules[\/](@radix-ui|lucide-react)[\/]/, priority: 1 },
+          ],
+        },
+      },
+    },
   },
 });

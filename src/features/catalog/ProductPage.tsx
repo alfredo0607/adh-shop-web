@@ -1,10 +1,11 @@
-import { ArrowLeft, CreditCard, RefreshCw, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CreditCard, RefreshCw, ShieldCheck, ShoppingBag } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import { useGetProductQuery, type ProductResponse } from '@/api';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { productChosen, selectCheckout } from '@/features/checkout/checkoutSlice';
+import { useAddToCart } from '@/features/cart/useAddToCart';
+import { orderStarted, selectCheckout } from '@/features/checkout/checkoutSlice';
 import { t } from '@/shared/copy/es-CO';
 import { isAppError } from '@/shared/errors/appError';
 import { Button } from '@/shared/ui/Button/Button';
@@ -72,14 +73,19 @@ const ProductDetails = ({ product }: { product: ProductResponse }): ReactNode =>
 
   const soldOut = stockLevel(product) === 'soldOut';
   const max = maxSelectableUnits(product);
-  // Coming back to the product of an order in progress keeps the units chosen.
-  const [chosen, setChosen] = useState(() => (saved.productId === product.id ? saved.units : 1));
+  // Coming back to the product of a "buy now" in progress keeps the units chosen.
+  const [chosen, setChosen] = useState(() => {
+    const item = saved.source === 'buy-now' ? saved.items[0] : undefined;
+    return item?.productId === product.id ? item.units : 1;
+  });
+  const addToCart = useAddToCart();
   // Stock can drop between visits; never offer more than there is.
   const units = Math.max(1, Math.min(chosen, max));
 
+  // "Pay with credit card" buys this product alone, now; the cart is left as it is.
   const pay = (): void => {
-    dispatch(productChosen({ productId: product.id, units }));
-    void navigate('checkout');
+    dispatch(orderStarted({ items: [{ productId: product.id, units }], source: 'buy-now' }));
+    void navigate('/checkout');
   };
 
   return (
@@ -140,10 +146,22 @@ const ProductDetails = ({ product }: { product: ProductResponse }): ReactNode =>
                 <Money cents={product.priceInCents * units} currency={product.currency} />
               </p>
             )}
-            <Button className={styles.pay} disabled={soldOut} onClick={pay}>
-              <CreditCard aria-hidden className={styles.icon} />
-              {t('product.pay')}
-            </Button>
+            <div className={styles.buttons}>
+              <Button
+                variant="secondary"
+                className={styles.addToCart}
+                disabled={soldOut}
+                aria-label={t('cart.add')}
+                onClick={() => addToCart(product, units, 'open-cart')}
+              >
+                <ShoppingBag aria-hidden className={styles.icon} />
+                <span className={styles.addLabel}>{t('cart.add')}</span>
+              </Button>
+              <Button className={styles.pay} disabled={soldOut} onClick={pay}>
+                <CreditCard aria-hidden className={styles.icon} />
+                {t('product.pay')}
+              </Button>
+            </div>
             <p className={styles.note}>{t('product.feesNote')}</p>
           </div>
 

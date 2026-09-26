@@ -61,6 +61,7 @@ src/
 │   ├── openapi.json        Snapshot of the API contract the code is generated from
 │   └── gateway.ts          Card tokenisation: a plain function, not an endpoint
 ├── features/
+│   ├── cart/               Cart slice, the side panel, the header button, viewCart
 │   ├── catalog/            Catalogue grid, filters (URL state), product card and page, unit selector
 │   ├── checkout/
 │   │   ├── checkoutSlice.ts
@@ -72,7 +73,7 @@ src/
 ├── shared/
 │   ├── ui/                 Our components on Radix Primitives: Dialog, Toast, Checkbox,
 │   │                       Select, Field, Button, Backdrop, Money, Stepper, Pagination,
-│   │                       PaymentMethods (the accepted card brands)
+│   │                       PaymentMethods (the accepted card brands), Drawer
 │   ├── errors/             AppError, normalisation, error-code → copy key mapping
 │   ├── copy/               es-CO.ts: every customer-facing text
 │   ├── lib/                Formatting, idempotency keys, configuration

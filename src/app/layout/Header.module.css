@@ -135,3 +135,14 @@
     display: block;
   }
 }
+
+/* The smallest phones: four 44 px targets and the brand only just fit. */
+@media (max-width: 359px) {
+  .brandName {
+    font-size: var(--text-lg);
+  }
+
+  .actions {
+    gap: 0;
+  }
+}
