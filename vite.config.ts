@@ -22,7 +22,9 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
-    sourcemap: true,
+    // Maps are generated for debugging a release, but the bundles do not
+    // reference them and the deployment does not upload them.
+    sourcemap: 'hidden',
     rolldownOptions: {
       output: {
         // Dependencies change far less often than the app. In chunks of their
