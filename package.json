@@ -12,7 +12,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "api:schema": "node -e \"fetch(process.env.API_DOCS_URL ?? 'https://adh-api.alfredo-dominguez.dev/api/docs-json').then(r=>r.json()).then(d=>require('node:fs').writeFileSync('src/api/openapi.json', JSON.stringify(d,null,2)+'\n'))\"",
+    "api:schema": "node scripts/fetch-openapi.mjs && prettier --write src/api/openapi.json",
     "api:generate": "rtk-query-codegen-openapi openapi-config.cjs && prettier --write src/api/generated",
     "lint": "eslint .",
     "typecheck": "tsc -b --noEmit",
