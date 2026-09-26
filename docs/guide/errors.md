@@ -100,14 +100,14 @@ exist (a `4xx`) is not a failure: the product page shows "Producto no encontrado
 
 ## Retrying
 
-| Situation                                            | Retry                                                                                                                                     |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Reads (`GET`) that failed on network, timeout or 5xx | Automatic, up to 2 times with backoff (RTK Query `retry`)                                                                                 |
-| `429`                                                | Never automatic; wait `Retry-After`, then the buyer retries                                                                               |
-| Creating a transaction                               | Never automatic: a new transaction would reserve stock twice                                                                              |
-| Paying, after a network failure or a timeout         | The buyer retries with the **same idempotency key**: if the first request arrived, the API replays its response instead of charging again |
-| Paying, after the API refused the card               | The buyer retries with a **new key** (`attemptRenewed`): the old one would only replay the refusal                                        |
-| Paying, after the reservation expired                | The next attempt opens a **new transaction** (`transactionDiscarded`)                                                                     |
+| Situation                                            | Retry                                                                                                                                 |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Reads (`GET`) that failed on network, timeout or 5xx | Automatic, up to 2 times with backoff (RTK Query `retry`)                                                                             |
+| `429`                                                | Never automatic; wait `Retry-After`, then the buyer retries                                                                           |
+| Creating a transaction                               | Never automatic: a new transaction would reserve stock twice                                                                          |
+| Paying, after a network failure or a timeout         | The retry first reads the transaction: if the payment arrived, the buyer goes to its status. Otherwise it pays under the **same key** |
+| Paying, after the API refused the card               | The buyer retries with a **new key** (`attemptRenewed`), one per attempt                                                              |
+| Paying, after the reservation expired                | The next attempt opens a **new transaction** (`transactionDiscarded`)                                                                 |
 
 ## Testing
 

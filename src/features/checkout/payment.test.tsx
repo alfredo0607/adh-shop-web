@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
+import { delay, http, HttpResponse } from 'msw';
 
 import { createStore } from '@/app/store';
 import { itemAdded } from '@/features/cart/cartSlice';
@@ -53,11 +53,19 @@ interface Seen {
   created: unknown[];
   tokenised: unknown[];
   payments: { key: string | null; body: unknown }[];
+  /** Whether the API holds a payment for the transaction, as `GET /transactions/{id}` reports it. */
+  submitted: boolean;
 }
+
+/** The API taking the payment: from then on it reports one for the transaction. */
+const accept = (seen: Seen): Response => {
+  seen.submitted = true;
+  return HttpResponse.json(aTransaction({ paymentSubmitted: true }), { status: 202 });
+};
 
 /** The API and the gateway, answering a successful payment unless told otherwise. */
 const serve = (overrides: Parameters<typeof server.use> = []): Seen => {
-  const seen: Seen = { created: [], tokenised: [], payments: [] };
+  const seen: Seen = { created: [], tokenised: [], payments: [], submitted: false };
   // Overrides first: of two handlers for one request, MSW uses the first.
   server.use(
     ...overrides,
@@ -79,10 +87,14 @@ const serve = (overrides: Parameters<typeof server.use> = []): Seen => {
         key: request.headers.get('Idempotency-Key'),
         body: await request.json(),
       });
-      return HttpResponse.json(aTransaction({ paymentSubmitted: true }), { status: 202 });
+      return accept(seen);
     }),
     http.get(`${API}/transactions/:id`, () =>
-      HttpResponse.json(aTransaction({ status: 'APPROVED', paymentSubmitted: true })),
+      HttpResponse.json(
+        seen.submitted
+          ? aTransaction({ status: 'APPROVED', paymentSubmitted: true })
+          : aTransaction({ status: 'PENDING', paymentSubmitted: false }),
+      ),
     ),
     http.get(`${API}/transactions/:id/delivery`, () => HttpResponse.json(aDelivery())),
   );
@@ -251,7 +263,7 @@ describe('summary and payment', () => {
         seen.payments.push({ key: request.headers.get('Idempotency-Key'), body: null });
         return attempt === 1
           ? HttpResponse.json(apiError('PAYMENT_REJECTED'), { status: 422 })
-          : HttpResponse.json(aTransaction({ paymentSubmitted: true }), { status: 202 });
+          : accept(seen);
       }),
     ]);
     const { summary } = await reachSummary();
@@ -266,15 +278,13 @@ describe('summary and payment', () => {
     expect(seen.payments[0]?.key).not.toBe(seen.payments[1]?.key);
   });
 
-  it('retries after a lost connection under the same key, so nothing is charged twice', async () => {
+  it('pays again under the same key when the connection dropped before the payment arrived', async () => {
     let attempt = 0;
     const seen = serve([
       http.post(`${API}/transactions/:id/payment`, ({ request }) => {
         attempt += 1;
         seen.payments.push({ key: request.headers.get('Idempotency-Key'), body: null });
-        return attempt === 1
-          ? HttpResponse.error()
-          : HttpResponse.json(aTransaction({ paymentSubmitted: true }), { status: 202 });
+        return attempt === 1 ? HttpResponse.error() : accept(seen);
       }),
     ]);
     const { summary } = await reachSummary();
@@ -287,6 +297,43 @@ describe('summary and payment', () => {
     await screen.findByRole('heading', { name: '¡Pago aprobado!' });
     expect(seen.payments).toHaveLength(2);
     expect(seen.payments[0]?.key).toBe(seen.payments[1]?.key);
+  });
+
+  it('finds the payment that arrived when only its answer was lost, and pays nothing more', async () => {
+    const seen = serve([
+      http.post(`${API}/transactions/:id/payment`, ({ request }) => {
+        seen.payments.push({ key: request.headers.get('Idempotency-Key'), body: null });
+        seen.submitted = true;
+        return HttpResponse.error();
+      }),
+    ]);
+    const { summary } = await reachSummary();
+
+    await acceptTerms(summary);
+    await pay(summary);
+    expect(await within(summary).findByRole('alert')).toHaveTextContent('Sin conexión');
+    await pay(summary);
+
+    expect(await screen.findByRole('heading', { name: '¡Pago aprobado!' })).toBeVisible();
+    expect(seen.payments).toHaveLength(1);
+  });
+
+  it('opens one transaction and sends one payment when the buyer taps twice', async () => {
+    const seen = serve([
+      http.post(`${API}/transactions`, async ({ request }) => {
+        seen.created.push(await request.json());
+        await delay(150);
+        return HttpResponse.json(aTransaction(), { status: 201 });
+      }),
+    ]);
+    const { summary } = await reachSummary();
+
+    await acceptTerms(summary);
+    await userEvent.dblClick(within(summary).getByRole('button', { name: /^Pagar/ }));
+
+    await screen.findByRole('heading', { name: '¡Pago aprobado!' });
+    expect(seen.created).toHaveLength(1);
+    expect(seen.payments).toHaveLength(1);
   });
 
   it('names the product that ran out, and reserves nothing', async () => {
@@ -348,7 +395,7 @@ describe('summary and payment', () => {
         attempt += 1;
         return attempt === 1
           ? HttpResponse.json(apiError('RESERVATION_EXPIRED'), { status: 409 })
-          : HttpResponse.json(aTransaction({ paymentSubmitted: true }), { status: 202 });
+          : accept(seen);
       }),
     ]);
     const { summary } = await reachSummary();
@@ -362,17 +409,24 @@ describe('summary and payment', () => {
     expect(seen.created).toHaveLength(2);
   });
 
-  it('goes to the outcome when the payment was already sent', async () => {
-    serve([
-      http.post(`${API}/transactions/:id/payment`, () =>
-        HttpResponse.json(apiError('TRANSACTION_NOT_PAYABLE'), { status: 409 }),
-      ),
-    ]);
-    const { summary } = await reachSummary();
+  it.each([
+    ['TRANSACTION_NOT_PAYABLE', 409],
+    ['IDEMPOTENCY_KEY_REUSED', 422],
+  ] as const)(
+    'goes to the outcome when the payment was already sent (%s)',
+    async (code, status) => {
+      const seen = serve([
+        http.post(`${API}/transactions/:id/payment`, () => {
+          seen.submitted = true;
+          return HttpResponse.json(apiError(code), { status });
+        }),
+      ]);
+      const { summary } = await reachSummary();
 
-    await acceptTerms(summary);
-    await pay(summary);
+      await acceptTerms(summary);
+      await pay(summary);
 
-    expect(await screen.findByRole('heading', { name: '¡Pago aprobado!' })).toBeVisible();
-  });
+      expect(await screen.findByRole('heading', { name: '¡Pago aprobado!' })).toBeVisible();
+    },
+  );
 });

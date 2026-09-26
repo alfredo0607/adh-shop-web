@@ -107,6 +107,7 @@ export const OrderSummary = (): ReactNode => {
       ),
     );
 
+    if (result.outcome === 'busy') return;
     if (result.outcome === 'submitted') {
       void navigate(`/orders/${result.transactionId}`, { replace: true });
       return;

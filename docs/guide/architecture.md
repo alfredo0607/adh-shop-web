@@ -115,8 +115,10 @@ These are enforced with ESLint import rules once the scaffold exists (step 1 of 
 Only when an action is a **sequence of dependent asynchronous steps that must not live in a
 component**. There is exactly one in the plan, `payOrder`:
 
-1. Turn the card into a token with the gateway, using the public key from `GET /payment-terms`.
-2. Reuse the stored `Idempotency-Key`, or create one for a first attempt.
+1. Mark the attempt as started, so a second tap does nothing. Open the transaction on a first
+   attempt; on a retry, check whether the previous payment arrived.
+2. Turn the card into a token with the gateway, using the public key from `GET /payment-terms`.
+   Reuse the stored `Idempotency-Key`, or create one for a first attempt.
 3. `POST /transactions/{id}/payment` with the token.
 4. Mark the payment as submitted; the status screen then polls for the outcome.
 
