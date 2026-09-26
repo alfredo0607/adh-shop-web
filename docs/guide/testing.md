@@ -46,7 +46,7 @@ Radix Primitives rely on browser APIs that jsdom does not implement. The shared 
 | **Schemas** (`schemas/`) | Plain unit tests, table-driven | Luhn, brand detection per BIN range, expiry edge cases (this month, last month), every delivery rule        |
 | **Slice**                | Reducer in, state out          | Each action; reset; that nothing sensitive can enter the state                                              |
 | **Persistence**          | The store's serialised output  | Only `checkout` is written; card fields and the RTK Query cache are absent                                  |
-| **`payOrder` thunk**     | Real store + MSW               | Happy path; each API error code; gateway failure; retry reusing the same idempotency key                    |
+| **`payOrder` thunk**     | Real store + MSW               | Happy path; each API error code; gateway failure; retries; a double tap opening one transaction             |
 | **Components**           | React Testing Library          | Loading, error and success states; the brand logo appearing; accessible names                               |
 | **Flows**                | Rendered app + MSW + router    | Product → pay → approved; declined; reload during payment resumes on the status screen; expired reservation |
 

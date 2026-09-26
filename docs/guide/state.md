@@ -72,9 +72,11 @@ interface CartState {
 ### Why the idempotency key is persisted
 
 The key is what makes a payment safe to retry. If the page reloads while the payment request
-is in flight, the buyer cannot know whether it reached the API. Retrying **with the same key**
-makes the API return the original response instead of charging again, and the API refuses a
-second payment for the same transaction under a new key as well. The key is created per
+is in flight, the buyer cannot know whether it reached the API. A retry first asks the API
+(`paymentSubmitted`), because each attempt tokenises the card again and a new token makes a
+different request, which the API does not replay. The key still protects the payment: the
+API answers `IDEMPOTENCY_KEY_REUSED` to a different request under a key it knows, and refuses
+a second payment for the same transaction under any key. The key is created per
 attempt, when a transaction is opened, and cleared with the order.
 
 ## Persistence

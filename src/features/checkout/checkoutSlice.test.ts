@@ -72,6 +72,12 @@ describe('checkout slice', () => {
     expect(second.idempotencyKey).not.toBe(first.idempotencyKey);
   });
 
+  it('leaves the payment in progress when its transaction opens', () => {
+    const paying = reduce(initialCheckoutState, paymentSubmitting());
+
+    expect(reduce(paying, transactionOpened('t-1')).paymentStatus).toBe('submitting');
+  });
+
   it('tracks the payment through submitting, submitted and failed', () => {
     let state = reduce(initialCheckoutState, paymentSubmitting());
     expect(state.paymentStatus).toBe('submitting');
@@ -169,6 +175,18 @@ describe('parsePersistedCheckout', () => {
     ['a delivery missing a field', { ...initialCheckoutState, delivery: { fullName: 'x' } }],
   ])('rejects %s', (_case, value) => {
     expect(parsePersistedCheckout(value)).toBeNull();
+  });
+
+  it('lets the buyer pay again after a reload while the transaction was being created', () => {
+    const stored = { ...initialCheckoutState, paymentStatus: 'submitting' };
+
+    expect(parsePersistedCheckout(stored)?.paymentStatus).toBe('idle');
+  });
+
+  it('keeps a payment in progress on an open transaction, for the status screen to follow', () => {
+    const stored = { ...initialCheckoutState, transactionId: 't-1', paymentStatus: 'submitting' };
+
+    expect(parsePersistedCheckout(stored)?.paymentStatus).toBe('submitting');
   });
 });
 

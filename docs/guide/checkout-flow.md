@@ -36,10 +36,10 @@ sequenceDiagram
     UI->>A: GET /payment-terms
     UI-->>B: summary backdrop, terms to accept
     B->>UI: "Pay"
-    UI->>A: POST /transactions (expectedTotalInCents)
-    A-->>UI: 201 PENDING, id
-    UI->>S: transactionOpened (id, new idempotency key)
-    UI->>S: payOrder
+    UI->>S: payOrder → paymentSubmitting (a second tap now does nothing)
+    S->>A: POST /transactions (expectedTotalInCents)
+    A-->>S: 201 PENDING, id
+    S->>S: transactionOpened (id, new idempotency key)
     S->>G: tokenise the card (public key)
     G-->>S: card token
     S->>A: POST /transactions/{id}/payment (Idempotency-Key)
@@ -55,7 +55,10 @@ sequenceDiagram
 ```
 
 The transaction is created when the buyer presses **Pay**, not earlier, as the brief
-specifies. Creating it on the summary screen would reserve stock for buyers who are only
+specifies. The attempt is marked `submitting` before that request leaves, so the button
+is disabled and a double tap cannot open two transactions. A retry on a transaction that
+is already open first reads `GET /transactions/{id}`: if `paymentSubmitted` is true, the
+previous attempt arrived and the buyer goes to its status instead of paying again. Creating it on the summary screen would reserve stock for buyers who are only
 looking.
 
 ## Resuming after a reload
@@ -63,11 +66,11 @@ looking.
 On start, once redux-remember has read the stored `checkout`, `ResumeOrder` (in the app
 shell) decides once, and only when the app opens on the home page:
 
-| Stored state                                    | Goes to                            | Why                                                                                                          |
-| ----------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| A transaction with `paymentStatus` `submitted`  | `/orders/{transactionId}`, polling | The payment is in flight or done; the server knows the outcome                                               |
-| A transaction with `paymentStatus` `submitting` | `/orders/{transactionId}`, polling | The request may or may not have arrived; polling finds out, and a retry would reuse the same idempotency key |
-| Anything else                                   | Stays where it is                  | The cart and the order are kept, and "Ir a pagar" or "Pagar" pick them up; the card is asked for again       |
+| Stored state                                    | Goes to                            | Why                                                                                                    |
+| ----------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| A transaction with `paymentStatus` `submitted`  | `/orders/{transactionId}`, polling | The payment is in flight or done; the server knows the outcome                                         |
+| A transaction with `paymentStatus` `submitting` | `/orders/{transactionId}`, polling | The request may or may not have arrived; polling finds out                                             |
+| Anything else                                   | Stays where it is                  | The cart and the order are kept, and "Ir a pagar" or "Pagar" pick them up; the card is asked for again |
 
 Only a payment in flight is resumed automatically: money may have moved, and the buyer must
 see the outcome. Everything else waits for the buyer, who may have come back to browse. A

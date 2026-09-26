@@ -89,7 +89,13 @@ export const parsePersistedCheckout = (value: unknown): CheckoutState | null => 
         ) &&
         (delivery as Record<string, unknown>)['country'] === 'CO'));
 
-  return valid ? (v as unknown as CheckoutState) : null;
+  if (!valid) return null;
+  const stored = v as unknown as CheckoutState;
+  // A reload while the transaction was being created: there is no transaction
+  // to wait for, so the order is back where the buyer can pay it.
+  return stored.paymentStatus === 'submitting' && stored.transactionId === null
+    ? { ...stored, paymentStatus: 'idle' }
+    : stored;
 };
 
 interface RehydrationAction {
@@ -123,6 +129,7 @@ export const checkoutSlice = createSlice({
       state.delivery = action.payload;
     },
 
+    /** Opened while paying: the payment status stays as the attempt set it. */
     transactionOpened: {
       reducer: (
         state,
@@ -130,8 +137,6 @@ export const checkoutSlice = createSlice({
       ) => {
         state.transactionId = action.payload.transactionId;
         state.idempotencyKey = action.payload.idempotencyKey;
-        state.paymentStatus = 'idle';
-        state.lastError = null;
       },
       // The key is created here, not in the reducer: reducers stay pure.
       prepare: (transactionId: string) => ({
@@ -141,9 +146,9 @@ export const checkoutSlice = createSlice({
 
     /**
      * A fresh idempotency key for the next attempt, after the API refused the
-     * previous one outright (a rejected card). Reusing that key would only
-     * replay the refusal. After a network failure the key is kept instead: the
-     * request may have arrived, and the same key makes a retry safe.
+     * previous one outright (a rejected card): one key per attempt keeps each
+     * attempt traceable. After a network failure the key is kept instead: the
+     * request may have arrived, and the API still knows that key.
      */
     attemptRenewed: {
       reducer: (state, action: PayloadAction<string>) => {
