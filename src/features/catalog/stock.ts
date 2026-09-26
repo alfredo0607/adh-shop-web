@@ -1,8 +1,8 @@
 import type { ProductResponse } from '@/api';
 import { t } from '@/shared/copy/es-CO';
+import { MAX_UNITS_PER_ORDER } from '@/shared/lib/order';
 
-/** The most units one order may hold. The API enforces the same limit. */
-export const MAX_UNITS_PER_ORDER = 10;
+export { MAX_UNITS_PER_ORDER };
 
 /** At or below this, the buyer is told stock is running out. */
 export const LOW_STOCK_THRESHOLD = 5;

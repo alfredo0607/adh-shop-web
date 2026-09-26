@@ -13,6 +13,8 @@ export interface StepperProps {
   increaseLabel: string;
   /** Shown under the control, e.g. why the maximum is what it is. */
   hint?: string;
+  /** Keeps the label for screen readers only, where the context already says it. */
+  hideLabel?: boolean;
 }
 
 /**
@@ -28,13 +30,14 @@ export const Stepper = ({
   decreaseLabel,
   increaseLabel,
   hint,
+  hideLabel = false,
 }: StepperProps): ReactNode => {
   const labelId = useId();
   const hintId = useId();
 
   return (
     <div className={styles.field}>
-      <span id={labelId} className={styles.label}>
+      <span id={labelId} className={hideLabel ? 'visually-hidden' : styles.label}>
         {label}
       </span>
       <div

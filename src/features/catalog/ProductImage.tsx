@@ -10,6 +10,8 @@ export interface ProductImageProps {
   alt: string;
   /** The page's main image: loaded first, never lazily. */
   priority?: boolean;
+  /** A thumbnail: the placeholder shows its icon only, with no room for words. */
+  compact?: boolean;
   className?: string;
 }
 
@@ -22,6 +24,7 @@ export const ProductImage = ({
   src,
   alt,
   priority = false,
+  compact = false,
   className,
 }: ProductImageProps): ReactNode => {
   // Remembering which URL failed, rather than a flag, means a fresh signed URL
@@ -33,7 +36,9 @@ export const ProductImage = ({
     return (
       <div className={`${frameClass} ${styles.fallback}`} role="img" aria-label={alt}>
         <ImageOff aria-hidden className={styles.fallbackIcon} />
-        <span className={styles.fallbackText}>{t('product.imageUnavailable')}</span>
+        {compact ? null : (
+          <span className={styles.fallbackText}>{t('product.imageUnavailable')}</span>
+        )}
       </div>
     );
   }

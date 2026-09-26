@@ -3,6 +3,7 @@ import { REMEMBER_REHYDRATED } from 'redux-remember';
 
 import type { ApiErrorCode } from '@/shared/errors/appError';
 import { createIdempotencyKey } from '@/shared/lib/ids';
+import { isOrderItemList, type OrderItem } from '@/shared/lib/order';
 
 /**
  * What the buyer chose and where the order stands. The only slice persisted to
@@ -23,9 +24,16 @@ export interface DeliveryDetails {
 
 export type PaymentStatus = 'idle' | 'submitting' | 'submitted' | 'failed';
 
+/**
+ * Where the order came from. An order from the cart empties the cart once it
+ * is paid; "buy now" on a product page leaves the cart as it was.
+ */
+export type OrderSource = 'cart' | 'buy-now';
+
 export interface CheckoutState {
-  productId: string | null;
-  units: number;
+  /** The products being bought, each with its units. Empty until an order starts. */
+  items: OrderItem[];
+  source: OrderSource | null;
   delivery: DeliveryDetails | null;
   /** Set once POST /transactions succeeds. */
   transactionId: string | null;
@@ -40,8 +48,8 @@ export interface CheckoutState {
 }
 
 export const initialCheckoutState: CheckoutState = {
-  productId: null,
-  units: 1,
+  items: [],
+  source: null,
   delivery: null,
   transactionId: null,
   idempotencyKey: null,
@@ -50,6 +58,7 @@ export const initialCheckoutState: CheckoutState = {
 };
 
 const PAYMENT_STATUSES: readonly PaymentStatus[] = ['idle', 'submitting', 'submitted', 'failed'];
+const ORDER_SOURCES: readonly (OrderSource | null)[] = ['cart', 'buy-now', null];
 
 const isString = (value: unknown): value is string => typeof value === 'string';
 const isNullableString = (value: unknown): value is string | null =>
@@ -67,10 +76,8 @@ export const parsePersistedCheckout = (value: unknown): CheckoutState | null => 
   const delivery = v['delivery'];
 
   const valid =
-    isNullableString(v['productId']) &&
-    typeof v['units'] === 'number' &&
-    Number.isInteger(v['units']) &&
-    v['units'] >= 1 &&
+    isOrderItemList(v['items']) &&
+    ORDER_SOURCES.includes(v['source'] as OrderSource | null) &&
     isNullableString(v['transactionId']) &&
     isNullableString(v['idempotencyKey']) &&
     PAYMENT_STATUSES.includes(v['paymentStatus'] as PaymentStatus) &&
@@ -95,25 +102,22 @@ const isRehydration = (action: { type: string }): action is RehydrationAction =>
 
 /** True while nothing has happened to the order in this session. */
 const isUntouched = (state: CheckoutState): boolean =>
-  (Object.keys(initialCheckoutState) as (keyof CheckoutState)[]).every(
-    (key) => state[key] === initialCheckoutState[key],
-  );
+  JSON.stringify(state) === JSON.stringify(initialCheckoutState);
 
 export const checkoutSlice = createSlice({
   name: 'checkout',
   initialState: initialCheckoutState,
   reducers: {
-    /** Starts or changes an order. Any transaction from a previous order is dropped. */
-    productChosen: (state, action: PayloadAction<{ productId: string; units: number }>) => ({
+    /**
+     * Starts an order, from the cart or from "buy now". Any transaction of a
+     * previous order is dropped; delivery details the buyer already gave are kept.
+     */
+    orderStarted: (state, action: PayloadAction<{ items: OrderItem[]; source: OrderSource }>) => ({
       ...initialCheckoutState,
       delivery: state.delivery,
-      productId: action.payload.productId,
-      units: action.payload.units,
+      items: action.payload.items,
+      source: action.payload.source,
     }),
-
-    unitsChanged: (state, action: PayloadAction<number>) => {
-      state.units = action.payload;
-    },
 
     deliverySaved: (state, action: PayloadAction<DeliveryDetails>) => {
       state.delivery = action.payload;
@@ -171,8 +175,7 @@ export const checkoutSlice = createSlice({
 });
 
 export const {
-  productChosen,
-  unitsChanged,
+  orderStarted,
   deliverySaved,
   transactionOpened,
   paymentSubmitting,
@@ -192,12 +195,12 @@ export const selectHasOpenTransaction = (state: WithCheckout): boolean =>
 export const selectResumeTarget = (
   state: WithCheckout,
 ): { screen: 'status'; transactionId: string } | { screen: 'summary' } | { screen: 'store' } => {
-  const { transactionId, paymentStatus, productId, delivery } = state.checkout;
+  const { transactionId, paymentStatus, items, delivery } = state.checkout;
 
   if (transactionId !== null && (paymentStatus === 'submitted' || paymentStatus === 'submitting')) {
     return { screen: 'status', transactionId };
   }
-  if (productId !== null && delivery !== null) {
+  if (items.length > 0 && delivery !== null) {
     return { screen: 'summary' };
   }
   return { screen: 'store' };

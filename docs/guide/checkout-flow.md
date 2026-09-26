@@ -5,14 +5,14 @@ product**. This is how each maps to routes, state and API calls.
 
 ## Routes
 
-| Route                    | Screen                                                                    | Brief step |
-| ------------------------ | ------------------------------------------------------------------------- | ---------- |
-| `/`                      | Catalogue: search, filters, sorting and pages, all in the query string    | 1          |
-| `/products/:id`          | Product page: description, price, stock, units, "Pay with credit card"    | 1          |
-| `/products/:id/checkout` | Card and delivery form, in a modal over the product page                  | 2          |
-| `/checkout/summary`      | Summary in a backdrop: product amount, base fee, delivery fee, terms      | 3          |
-| `/orders/:id`            | Final status: approved with delivery details, or declined with a way back | 4          |
-| back to `/products/:id`  | Product page again, with the stock refetched                              | 5          |
+| Route                   | Screen                                                                    | Brief step |
+| ----------------------- | ------------------------------------------------------------------------- | ---------- |
+| `/`                     | Catalogue: search, filters, sorting and pages, all in the query string    | 1          |
+| `/products/:id`         | Product page: description, price, stock, units, "Pay with credit card"    | 1          |
+| `/checkout`             | Card and delivery form, in a modal; reached from "buy now" or the cart    | 2          |
+| `/checkout/summary`     | Summary in a backdrop: product amount, base fee, delivery fee, terms      | 3          |
+| `/orders/:id`           | Final status: approved with delivery details, or declined with a way back | 4          |
+| back to `/products/:id` | Product page again, with the stock refetched                              | 5          |
 
 ## Sequence
 
@@ -27,12 +27,12 @@ sequenceDiagram
 
     B->>UI: open a product
     UI->>A: GET /products/{id}
-    B->>UI: choose units, "Pay with credit card"
-    UI->>S: productChosen
+    B->>UI: choose units, "Pay with credit card" (or "Ir a pagar" in the cart)
+    UI->>S: orderStarted (items, source)
     B->>UI: card + delivery details
     Note over UI: validated live: Luhn, brand logo,<br/>expiry, delivery rules. Card stays in the form.
     UI->>S: deliverySaved
-    UI->>A: GET /quotes?productId&units
+    UI->>A: GET /quotes?items=prod-a:1,prod-b:2
     UI->>A: GET /payment-terms
     UI-->>B: summary backdrop, terms to accept
     B->>UI: "Pay"
@@ -51,7 +51,7 @@ sequenceDiagram
     A-->>UI: APPROVED or DECLINED
     UI->>A: GET /transactions/{id}/delivery (if approved)
     B->>UI: "Back to the store"
-    UI->>S: orderClosed · invalidate Product
+    UI->>S: orderClosed · cartCleared if the order came from the cart · invalidate Product
 ```
 
 The transaction is created when the buyer presses **Pay**, not earlier, as the brief
@@ -68,7 +68,7 @@ On start, after redux-remember rehydrates `checkout`, the app routes by what is 
 | `paymentStatus = submitting`                       | `/orders/{transactionId}`                      | The request may or may not have arrived; polling finds out, and a retry reuses the same idempotency key |
 | A transaction, no payment, reservation still valid | `/checkout/summary`, asking for the card again | Card data is never stored                                                                               |
 | A transaction whose reservation expired            | Product page, with a notice                    | The units went back to stock; start again                                                               |
-| A product and delivery, no transaction             | `/checkout/summary`                            | Nothing reserved yet                                                                                    |
+| Items and delivery, no transaction                 | `/checkout/summary`                            | Nothing reserved yet                                                                                    |
 | Nothing                                            | `/`                                            |                                                                                                         |
 
 The transaction response carries `paymentSubmitted` and `reservationExpiresAt`, which is

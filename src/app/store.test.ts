@@ -2,7 +2,8 @@ import { waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 
 import { api } from '@/api';
-import { deliverySaved, productChosen } from '@/features/checkout/checkoutSlice';
+import { itemAdded } from '@/features/cart/cartSlice';
+import { deliverySaved, orderStarted } from '@/features/checkout/checkoutSlice';
 import { aProduct, apiError } from '@/test/fixtures';
 import { memoryStorage } from '@/test/memoryStorage';
 import { API, server } from '@/test/server';
@@ -22,7 +23,7 @@ const DELIVERY = {
 };
 
 describe('persistence', () => {
-  it('writes the checkout slice, and nothing else, to storage', async () => {
+  it('writes the order in progress and the cart, and nothing else, to storage', async () => {
     server.use(
       http.get(`${API}/products`, () =>
         HttpResponse.json({ items: [aProduct()], nextCursor: null }),
@@ -32,29 +33,41 @@ describe('persistence', () => {
     const store = createStore({ storage });
     await waitFor(() => expect(selectRehydrated(store.getState())).toBe(true));
 
-    store.dispatch(productChosen({ productId: 'prod-espresso-01', units: 1 }));
+    store.dispatch(
+      orderStarted({ items: [{ productId: 'prod-espresso-01', units: 1 }], source: 'buy-now' }),
+    );
+    store.dispatch(itemAdded({ productId: 'prod-grinder-02', units: 2 }));
     await store.dispatch(api.endpoints.listProducts.initiate({}));
 
-    await waitFor(() => expect(storage.entries.has(`${STORAGE_PREFIX}checkout`)).toBe(true));
-    expect([...storage.entries.keys()]).toEqual([`${STORAGE_PREFIX}checkout`]);
+    // Writes are throttled: wait for the content, not just the key.
+    await waitFor(() =>
+      expect(JSON.parse(storage.entries.get(`${STORAGE_PREFIX}cart`) ?? '{}')).toEqual({
+        lines: [{ productId: 'prod-grinder-02', units: 2 }],
+      }),
+    );
+    expect([...storage.entries.keys()].sort()).toEqual([
+      `${STORAGE_PREFIX}cart`,
+      `${STORAGE_PREFIX}checkout`,
+    ]);
   });
 
-  it('never writes card data, because the checkout slice has nowhere to hold it', async () => {
+  it('never writes card data, because no persisted slice has anywhere to hold it', async () => {
     const storage = memoryStorage();
     const store = createStore({ storage });
     await waitFor(() => expect(selectRehydrated(store.getState())).toBe(true));
 
     store.dispatch(deliverySaved(DELIVERY));
+    store.dispatch(itemAdded({ productId: 'prod-espresso-01', units: 1 }));
 
-    await waitFor(() => expect(storage.entries.size).toBe(1));
+    await waitFor(() => expect(storage.entries.has(`${STORAGE_PREFIX}checkout`)).toBe(true));
     const written = [...storage.entries.values()].join('');
     expect(written).not.toMatch(/\d{13,19}|cvc|cardNumber|number/i);
   });
 
   it('restores a saved order after a reload', async () => {
     const saved = {
-      productId: 'prod-espresso-01',
-      units: 2,
+      items: [{ productId: 'prod-espresso-01', units: 2 }],
+      source: 'buy-now',
       delivery: DELIVERY,
       transactionId: 't-1',
       idempotencyKey: 'key-1',
@@ -66,6 +79,22 @@ describe('persistence', () => {
     const store = createStore({ storage });
 
     await waitFor(() => expect(store.getState().checkout).toEqual(saved));
+  });
+
+  it('restores the cart after a reload, and ignores a tampered one', async () => {
+    const lines = [{ productId: 'prod-espresso-01', units: 2 }];
+    const restored = createStore({
+      storage: memoryStorage({ [`${STORAGE_PREFIX}cart`]: JSON.stringify({ lines }) }),
+    });
+    const tampered = createStore({
+      storage: memoryStorage({
+        [`${STORAGE_PREFIX}cart`]: JSON.stringify({ lines: [{ productId: 'x', units: 999 }] }),
+      }),
+    });
+
+    await waitFor(() => expect(restored.getState().cart.lines).toEqual(lines));
+    await waitFor(() => expect(selectRehydrated(tampered.getState())).toBe(true));
+    expect(tampered.getState().cart.lines).toEqual([]);
   });
 
   it('keeps requests made before rehydration finished', async () => {

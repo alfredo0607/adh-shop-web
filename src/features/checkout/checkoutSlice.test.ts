@@ -9,11 +9,10 @@ import {
   paymentFailed,
   paymentSubmitted,
   paymentSubmitting,
-  productChosen,
+  orderStarted,
   selectHasOpenTransaction,
   selectResumeTarget,
   transactionOpened,
-  unitsChanged,
   type CheckoutState,
   type DeliveryDetails,
 } from './checkoutSlice';
@@ -36,31 +35,29 @@ const withState = (checkout: Partial<CheckoutState>): { checkout: CheckoutState 
 });
 
 describe('checkout slice', () => {
-  it('starts a new order when a product is chosen, dropping any previous transaction', () => {
+  it('starts a new order, keeping the delivery details but dropping any previous transaction', () => {
     const previous: CheckoutState = {
       ...initialCheckoutState,
-      productId: 'old',
+      items: [{ productId: 'old', units: 1 }],
+      source: 'buy-now',
       delivery: DELIVERY,
       transactionId: 't-1',
       idempotencyKey: 'k-1',
       paymentStatus: 'failed',
     };
+    const items = [
+      { productId: 'prod-01', units: 2 },
+      { productId: 'prod-02', units: 1 },
+    ];
 
-    const state = reduce(previous, productChosen({ productId: 'prod-01', units: 2 }));
+    const state = reduce(previous, orderStarted({ items, source: 'cart' }));
 
-    expect(state).toEqual({
-      ...initialCheckoutState,
-      productId: 'prod-01',
-      units: 2,
-      delivery: DELIVERY,
-    });
+    expect(state).toEqual({ ...initialCheckoutState, items, source: 'cart', delivery: DELIVERY });
   });
 
-  it('records units and delivery details', () => {
-    let state = reduce(initialCheckoutState, unitsChanged(3));
-    state = reduce(state, deliverySaved(DELIVERY));
+  it('records the delivery details', () => {
+    const state = reduce(initialCheckoutState, deliverySaved(DELIVERY));
 
-    expect(state.units).toBe(3);
     expect(state.delivery).toEqual(DELIVERY);
   });
 
@@ -119,11 +116,20 @@ describe('checkout slice', () => {
   });
 
   it('keeps what the buyer did before rehydration finished over the stored record', () => {
-    const current = reduce(initialCheckoutState, productChosen({ productId: 'new', units: 4 }));
+    const current = reduce(
+      initialCheckoutState,
+      orderStarted({ items: [{ productId: 'new', units: 4 }], source: 'buy-now' }),
+    );
 
     const state = reduce(current, {
       type: REMEMBER_REHYDRATED,
-      payload: { checkout: { ...initialCheckoutState, productId: 'old', units: 1 } },
+      payload: {
+        checkout: {
+          ...initialCheckoutState,
+          items: [{ productId: 'old', units: 1 }],
+          source: 'cart',
+        },
+      },
     });
 
     expect(state).toBe(current);
@@ -134,7 +140,27 @@ describe('parsePersistedCheckout', () => {
   it.each([
     ['not an object', 'checkout'],
     ['null', null],
-    ['units below one', { ...initialCheckoutState, units: 0 }],
+    ['items that are not a list', { ...initialCheckoutState, items: 'prod-01:1' }],
+    ['an item with zero units', { ...initialCheckoutState, items: [{ productId: 'p', units: 0 }] }],
+    [
+      'an item over the unit limit',
+      { ...initialCheckoutState, items: [{ productId: 'p', units: 11 }] },
+    ],
+    [
+      'the same product twice',
+      {
+        ...initialCheckoutState,
+        items: [
+          { productId: 'p', units: 1 },
+          { productId: 'p', units: 1 },
+        ],
+      },
+    ],
+    [
+      'a product id the API would refuse',
+      { ...initialCheckoutState, items: [{ productId: '../x', units: 1 }] },
+    ],
+    ['an unknown source', { ...initialCheckoutState, source: 'wishlist' }],
     ['an unknown payment status', { ...initialCheckoutState, paymentStatus: 'charged' }],
     [
       'a delivery outside Colombia',
@@ -164,8 +190,8 @@ describe('selectors', () => {
       { screen: 'status', transactionId: 't-1' },
     ],
     [
-      'a product and delivery, no payment yet',
-      { productId: 'p', delivery: DELIVERY },
+      'items and delivery, no payment yet',
+      { items: [{ productId: 'p', units: 1 }], delivery: DELIVERY },
       { screen: 'summary' },
     ],
     ['nothing', {}, { screen: 'store' }],

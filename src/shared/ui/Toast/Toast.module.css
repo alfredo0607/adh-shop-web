@@ -13,11 +13,11 @@
   outline: none;
 }
 
+/* Bottom right from 600 px: out of the way of the sticky header and its cart. */
 @media (min-width: 600px) {
   .viewport {
     inset-inline: auto var(--space-5);
-    top: var(--space-5);
-    bottom: auto;
+    bottom: calc(var(--space-5) + env(safe-area-inset-bottom));
     width: 24rem;
     padding: 0;
   }
