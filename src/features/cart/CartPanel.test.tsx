@@ -1,6 +1,5 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { RouteObject } from 'react-router';
 
 import { selectNotifications } from '@/app/notifications/notificationsSlice';
 import { routes } from '@/app/router';
@@ -10,11 +9,6 @@ import { memoryStorage } from '@/test/memoryStorage';
 import { renderRoute } from '@/test/renderRoute';
 
 import { itemAdded } from './cartSlice';
-
-const withCheckout: RouteObject[] = [
-  { path: '/checkout', element: <p>Checkout screen</p> },
-  ...routes,
-];
 
 const storeWith = (lines: { productId: string; units: number }[]) => {
   const store = createStore({ storage: memoryStorage() });
@@ -134,13 +128,15 @@ describe('cart', () => {
       { productId: 'prod-espresso-01', units: 1 },
       { productId: 'prod-grinder-02', units: 2 },
     ]);
-    renderRoute('/', withCheckout, store);
+    renderRoute('/', routes, store);
 
     const cart = await openCart();
     await userEvent.click(await within(cart).findByRole('button', { name: 'Ir a pagar' }));
 
-    expect(await screen.findByText('Checkout screen')).toBeVisible();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole('dialog', { name: 'Pago con tarjeta de crédito' }),
+    ).toBeVisible();
+    expect(screen.queryByRole('dialog', { name: 'Tu carrito' })).not.toBeInTheDocument();
     expect(selectCheckout(store.getState())).toMatchObject({
       source: 'cart',
       items: [

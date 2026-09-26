@@ -15,7 +15,12 @@ except to the payment gateway.**
   `createAsyncThunk`, which would copy its argument into every action's `meta`, and
   tokenisation is a plain function rather than an RTK Query endpoint, which would keep its
   arguments in the cache. See [architecture.md](./architecture.md#when-to-use-a-thunk).
-- The form clears its state when it unmounts, and on a failed payment the buyer re-enters it.
+- Between the form and the summary, the card lives in the React state of the `/checkout`
+  route (`features/checkout/session.ts`), handed to its child routes through the router's
+  outlet context. Leaving the checkout unmounts the route and the card with it; a reload on
+  the summary sends the buyer back to the form, because there is nothing to restore it from.
+- The summary shows only the brand, the last four digits and the installments.
+- On a failed payment the buyer re-enters the card.
 - Inputs use `autocomplete="cc-number"`, `cc-exp`, `cc-csc` and `cc-name`, so browsers and
   password managers treat them as payment fields, and `inputmode="numeric"` for the mobile
   keypad.
