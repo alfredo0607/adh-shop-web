@@ -6,15 +6,16 @@ numbers or refetching data it already has.
 | Home                       | Holds                                                                  | Persisted to `localStorage`                                        |
 | -------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | **RTK Query cache**        | Products, quote, payment terms, the transaction (polled), its delivery | **No.** It is refetched; stale server data is worse than a request |
-| **`checkout` slice**       | What the buyer chose and where the order stands                        | **Yes, and only this slice**                                       |
+| **`cart` slice**           | The products the buyer means to buy: ids and units only                | **Yes**                                                            |
+| **`checkout` slice**       | The order in progress and where it stands                              | **Yes**                                                            |
 | **Form state** (component) | Card number, expiry, CVC, holder name                                  | **Never**, not in Redux and not on disk                            |
 
 ## The `checkout` slice
 
 ```ts
 interface CheckoutState {
-  productId: string | null;
-  units: number;
+  items: OrderItem[]; // { productId, units }, one per product; empty until an order starts
+  source: 'cart' | 'buy-now' | null; // an order from the cart empties the cart once paid
   delivery: DeliveryDetails | null; // buyer name, email, phone, address
   transactionId: string | null; // set once POST /transactions succeeds
   idempotencyKey: string | null; // one per payment attempt
@@ -27,15 +28,44 @@ interface CheckoutState {
 
 | Action                                   | Effect                                                               |
 | ---------------------------------------- | -------------------------------------------------------------------- |
-| `productChosen({ productId, units })`    | Starts or changes the order; clears any previous transaction         |
+| `orderStarted({ items, source })`        | Starts an order; keeps the delivery details, drops any transaction   |
 | `deliverySaved(details)`                 | Stores validated delivery details                                    |
-| `unitsChanged(units)`                    | Changes the units of the current order                               |
 | `transactionOpened(transactionId)`       | Records the PENDING transaction and creates a fresh `idempotencyKey` |
 | `paymentSubmitting / Submitted / Failed` | Moves `paymentStatus`; `paymentFailed(code)` stores `lastError`      |
 | `orderClosed()`                          | Resets everything after the buyer returns to the store               |
 
 The payment actions are dispatched by the `payOrder` thunk. None of them carries card data;
 see [When to use a thunk](./architecture.md#when-to-use-a-thunk).
+
+### Where an order comes from
+
+- **Buy now**: "Pagar con tarjeta de crédito" on a product page starts an order of that one
+  product (`source: 'buy-now'`). The cart is left as it was.
+- **The cart**: "Ir a pagar" starts an order of every product the cart can sell now
+  (`source: 'cart'`). Once that order is paid, the cart is emptied.
+
+Both lead to `/checkout`, and from there the flow is the same: the API takes a list of items
+either way.
+
+## The `cart` slice
+
+```ts
+interface CartState {
+  lines: OrderItem[]; // { productId, units }; at most 10 products, 1 to 10 units each
+}
+```
+
+- It holds **ids and units only**. Names, prices and stock come from the catalogue query every
+  time the cart is shown (`viewCart` in `features/cart/cartView.ts`), so a price change or a
+  product selling out appears in the cart instead of surprising the buyer at the end. A line
+  with more units than are in stock is offered at what is in stock; a sold-out line holds
+  back "Ir a pagar" until it is removed.
+- The limits match the API's: 10 distinct products, 1 to 10 units each. A buyer who tries to
+  add an eleventh product is told why it did not go in.
+- Whether the side panel is open lives in a separate slice, `cartPanel`, which is not
+  persisted: a reload closes the panel.
+- Stored carts go through the same checks as stored orders (`isOrderItemList`), and a stored
+  cart applies only while this session's cart is still empty.
 
 ### Why the idempotency key is persisted
 
@@ -47,11 +77,12 @@ attempt, when a transaction is opened, and cleared with the order.
 
 ## Persistence
 
-redux-remember stores exactly one key: `checkout`. Everything else is left out on purpose.
+redux-remember stores exactly two keys: `checkout` and `cart`. Everything else is left out on
+purpose.
 
 ```ts
 // app/persistence.ts
-export const PERSISTED_SLICES = ['checkout'] as const;
+export const PERSISTED_SLICES = ['checkout', 'cart'] as const;
 ```
 
 - **Never persisted:** card number, CVC, expiry, holder name, the card token (single-use and

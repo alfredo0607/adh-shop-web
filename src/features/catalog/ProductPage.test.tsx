@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import type { RouteObject } from 'react-router';
@@ -6,7 +6,7 @@ import type { RouteObject } from 'react-router';
 import { selectNotifications } from '@/app/notifications/notificationsSlice';
 import { routes } from '@/app/router';
 import { createStore } from '@/app/store';
-import { productChosen, selectCheckout } from '@/features/checkout/checkoutSlice';
+import { orderStarted, selectCheckout } from '@/features/checkout/checkoutSlice';
 import { aProduct, apiError } from '@/test/fixtures';
 import { memoryStorage } from '@/test/memoryStorage';
 import { renderRoute } from '@/test/renderRoute';
@@ -16,7 +16,7 @@ const ESPRESSO = '/products/prod-espresso-01';
 
 /** The app's routes, plus a stand-in for the checkout screen that step 4 adds. */
 const withCheckout: RouteObject[] = [
-  { path: '/products/:id/checkout', element: <p>Checkout screen</p> },
+  { path: '/checkout', element: <p>Checkout screen</p> },
   ...routes,
 ];
 
@@ -79,14 +79,41 @@ describe('product page', () => {
 
     expect(await screen.findByText('Checkout screen')).toBeVisible();
     expect(selectCheckout(store.getState())).toMatchObject({
-      productId: 'prod-espresso-01',
-      units: 2,
+      items: [{ productId: 'prod-espresso-01', units: 2 }],
+      source: 'buy-now',
     });
+    // Buying now leaves the cart as it was.
+    expect(store.getState().cart.lines).toEqual([]);
+  });
+
+  it('adds the chosen units to the cart and opens it', async () => {
+    const { store } = renderRoute(ESPRESSO);
+    await screen.findByRole('heading', { level: 1, name: /./ });
+
+    await userEvent.click(increase());
+    await userEvent.click(screen.getByRole('button', { name: 'Agregar al carrito' }));
+
+    const cart = await screen.findByRole('dialog', { name: 'Tu carrito' });
+    expect(within(cart).getByRole('link', { name: 'Cafetera espresso Artigiano' })).toBeVisible();
+    expect(store.getState().cart.lines).toEqual([{ productId: 'prod-espresso-01', units: 2 }]);
+    // While the cart is open, the page behind it is hidden from assistive technology.
+    expect(
+      screen.getByRole('button', { name: 'Carrito, 2 productos', hidden: true }),
+    ).toBeInTheDocument();
+  });
+
+  it('cannot add a sold-out product to the cart', async () => {
+    renderRoute('/products/prod-beans-06');
+    await screen.findByRole('heading', { level: 1, name: /./ });
+
+    expect(screen.getByRole('button', { name: 'Agregar al carrito' })).toBeDisabled();
   });
 
   it('remembers the units of an order in progress for the same product', async () => {
     const store = createStore({ storage: memoryStorage() });
-    store.dispatch(productChosen({ productId: 'prod-espresso-01', units: 4 }));
+    store.dispatch(
+      orderStarted({ items: [{ productId: 'prod-espresso-01', units: 4 }], source: 'buy-now' }),
+    );
 
     renderRoute(ESPRESSO, routes, store);
     await screen.findByRole('heading', { level: 1, name: /./ });
@@ -96,7 +123,9 @@ describe('product page', () => {
 
   it('lowers remembered units that stock can no longer cover', async () => {
     const store = createStore({ storage: memoryStorage() });
-    store.dispatch(productChosen({ productId: 'prod-grinder-02', units: 7 }));
+    store.dispatch(
+      orderStarted({ items: [{ productId: 'prod-grinder-02', units: 7 }], source: 'buy-now' }),
+    );
 
     renderRoute('/products/prod-grinder-02', routes, store);
     await screen.findByRole('heading', { level: 1, name: /./ });

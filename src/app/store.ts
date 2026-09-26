@@ -3,6 +3,7 @@ import { setupListeners } from '@reduxjs/toolkit/query';
 import { rememberEnhancer, type Driver } from 'redux-remember';
 
 import { api } from '@/api';
+import { cartPanelSlice, cartSlice } from '@/features/cart/cartSlice';
 import { checkoutSlice } from '@/features/checkout/checkoutSlice';
 import { isDevelopment } from '@/shared/lib/runtime';
 
@@ -12,6 +13,8 @@ import { PERSISTED_SLICES, STORAGE_PREFIX, browserStorage, persistenceSlice } fr
 
 const rootReducer = combineReducers({
   [api.reducerPath]: api.reducer,
+  cart: cartSlice.reducer,
+  cartPanel: cartPanelSlice.reducer,
   checkout: checkoutSlice.reducer,
   notifications: notificationsSlice.reducer,
   persistence: persistenceSlice.reducer,

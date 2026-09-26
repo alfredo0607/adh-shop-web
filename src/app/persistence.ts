@@ -2,11 +2,11 @@ import { createSlice } from '@reduxjs/toolkit';
 import { REMEMBER_REHYDRATED, type Driver } from 'redux-remember';
 
 /**
- * The slices written to localStorage. Only `checkout`, and it holds no card
- * data by construction. Everything else, including the RTK Query cache, is
- * deliberately left out. See docs/guide/state.md.
+ * The slices written to localStorage: the order in progress and the cart.
+ * Neither can hold card data, by construction. Everything else, including the
+ * RTK Query cache, is deliberately left out. See docs/guide/state.md.
  */
-export const PERSISTED_SLICES = ['checkout'] as const;
+export const PERSISTED_SLICES = ['checkout', 'cart'] as const;
 
 export const STORAGE_PREFIX = 'adh-shop:';
 

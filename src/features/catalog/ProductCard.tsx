@@ -1,16 +1,18 @@
-import { Heart } from 'lucide-react';
+import { Heart, ShoppingBag } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 
 import type { ProductResponse } from '@/api';
 import { useAppDispatch } from '@/app/hooks';
 import { comingSoon } from '@/app/notifications/notificationsSlice';
+import { useAddToCart } from '@/features/cart/useAddToCart';
 import { t } from '@/shared/copy/es-CO';
 import { Money } from '@/shared/ui/Money/Money';
 
 import { productPath } from './paths';
 import styles from './ProductCard.module.css';
 import { ProductImage } from './ProductImage';
+import { stockLevel } from './stock';
 import { StockBadge } from './StockBadge';
 
 /**
@@ -19,6 +21,7 @@ import { StockBadge } from './StockBadge';
  */
 export const ProductCard = ({ product }: { product: ProductResponse }): ReactNode => {
   const dispatch = useAppDispatch();
+  const addToCart = useAddToCart();
 
   return (
     <article className={styles.card}>
@@ -43,7 +46,19 @@ export const ProductCard = ({ product }: { product: ProductResponse }): ReactNod
           </Link>
         </h3>
         <Money className={styles.price} cents={product.priceInCents} currency={product.currency} />
-        <StockBadge product={product} />
+        <div className={styles.footer}>
+          <StockBadge product={product} />
+          {stockLevel(product) === 'soldOut' ? null : (
+            <button
+              type="button"
+              className={styles.add}
+              aria-label={t('cart.addNamed', { name: product.name })}
+              onClick={() => addToCart(product, 1, 'notify')}
+            >
+              <ShoppingBag aria-hidden />
+            </button>
+          )}
+        </div>
       </div>
     </article>
   );

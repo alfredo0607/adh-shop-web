@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Outlet, ScrollRestoration } from 'react-router';
 
+import { CartPanel } from '@/features/cart/CartPanel';
 import { t } from '@/shared/copy/es-CO';
 
 import styles from './AppShell.module.css';
@@ -23,5 +24,6 @@ export const AppShell = ({ children }: { children?: ReactNode }): ReactNode => (
     </main>
 
     <Footer />
+    <CartPanel />
   </div>
 );

@@ -1,0 +1,28 @@
+.button {
+  position: relative;
+}
+
+.badge {
+  position: absolute;
+  inset-block-start: 0.2rem;
+  inset-inline-end: 0.1rem;
+  display: grid;
+  place-items: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding-inline: 0.3rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-ornament);
+  color: var(--color-text);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  animation: pop var(--duration-base) var(--ease-standard);
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.6);
+  }
+}
