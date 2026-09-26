@@ -25,13 +25,17 @@ interface CheckoutState {
 
 ### Reducers
 
-| Action                                    | Effect                                                               |
-| ----------------------------------------- | -------------------------------------------------------------------- |
-| `productChosen({ productId, units })`     | Starts or changes the order; clears any previous transaction         |
-| `deliverySaved(details)`                  | Stores validated delivery details                                    |
-| `transactionOpened({ transactionId })`    | Records the PENDING transaction and creates a fresh `idempotencyKey` |
-| `payOrder.pending / fulfilled / rejected` | Moves `paymentStatus`; `rejected` stores `lastError`                 |
-| `orderClosed()`                           | Resets everything after the buyer returns to the store               |
+| Action                                   | Effect                                                               |
+| ---------------------------------------- | -------------------------------------------------------------------- |
+| `productChosen({ productId, units })`    | Starts or changes the order; clears any previous transaction         |
+| `deliverySaved(details)`                 | Stores validated delivery details                                    |
+| `unitsChanged(units)`                    | Changes the units of the current order                               |
+| `transactionOpened(transactionId)`       | Records the PENDING transaction and creates a fresh `idempotencyKey` |
+| `paymentSubmitting / Submitted / Failed` | Moves `paymentStatus`; `paymentFailed(code)` stores `lastError`      |
+| `orderClosed()`                          | Resets everything after the buyer returns to the store               |
+
+The payment actions are dispatched by the `payOrder` thunk. None of them carries card data;
+see [When to use a thunk](./architecture.md#when-to-use-a-thunk).
 
 ### Why the idempotency key is persisted
 
@@ -58,6 +62,22 @@ export const PERSISTED_SLICES = ['checkout'] as const;
 A reload on the summary screen therefore keeps the product and the delivery details but asks
 for the card again. That is a deliberate security trade: card data never touches storage that
 outlives the page.
+
+### How rehydration works
+
+- The store uses `rememberEnhancer` with the `checkout` allowlist and the `adh-shop:` key
+  prefix. Writes are throttled to one every 200 ms.
+- The root reducer is **not** wrapped in `rememberReducer`. That wrapper replaces the whole
+  state when the stored data arrives, which drops requests RTK Query started before
+  rehydration finished. Instead, the `checkout` slice listens for `REMEMBER_REHYDRATED` and
+  takes back only its own record.
+- Stored data is untrusted: the user or an older version of the app may have written it.
+  `parsePersistedCheckout` validates the record, and a malformed one is ignored, so the app
+  starts empty instead of crashing.
+- `persistence.rehydrated` becomes `true` once the stored data has been read. The resume logic
+  waits for it, so it never routes on the empty initial state.
+- If the browser refuses storage (private mode, quota, blocked cookies), reads return nothing
+  and writes are dropped. The app keeps working without persistence.
 
 ## Server state rules
 

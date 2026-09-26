@@ -1,5 +1,11 @@
 import '@testing-library/jest-dom';
 
+import { server } from './server';
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
 /*
  * Browser APIs jsdom does not implement, which Radix Primitives and our own
  * reduced-motion styles rely on. Provided once here so no test has to.
