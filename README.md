@@ -35,6 +35,8 @@ pnpm dev            # http://localhost:5173, with /api proxied to the ADH Shop A
 | `pnpm format:check` | Prettier, as CI runs it                                            |
 | `pnpm test`         | Jest                                                               |
 | `pnpm test:cov`     | Jest with coverage; fails below 80%                                |
+| `pnpm api:schema`   | Downloads the API's OpenAPI document into `src/api/openapi.json`   |
+| `pnpm api:generate` | Regenerates the RTK Query endpoints and types from that snapshot   |
 
 ## Pull request checks
 

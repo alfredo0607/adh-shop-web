@@ -13,7 +13,7 @@
  * @type {import('jest').Config}
  */
 export default {
-  testEnvironment: 'jest-fixed-jsdom',
+  testEnvironment: '<rootDir>/jest.environment.cjs',
   testEnvironmentOptions: { customExportConditions: [''] },
   roots: ['<rootDir>/src'],
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],

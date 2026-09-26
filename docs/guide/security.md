@@ -9,6 +9,10 @@ except to the payment gateway.**
   never put in Redux, never persisted, never logged, never sent to the ADH Shop API.
 - On submit, `payOrder` sends them directly to the gateway's tokenisation endpoint with the
   public key, and receives a single-use token. Only the token goes to the API.
+- They never pass through a Redux action either. `payOrder` is a plain thunk rather than
+  `createAsyncThunk`, which would copy its argument into every action's `meta`, and
+  tokenisation is a plain function rather than an RTK Query endpoint, which would keep its
+  arguments in the cache. See [architecture.md](./architecture.md#when-to-use-a-thunk).
 - The form clears its state when it unmounts, and on a failed payment the buyer re-enters it.
 - Inputs use `autocomplete="cc-number"`, `cc-exp`, `cc-csc` and `cc-name`, so browsers and
   password managers treat them as payment fields, and `inputmode="numeric"` for the mobile

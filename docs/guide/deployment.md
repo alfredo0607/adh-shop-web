@@ -63,9 +63,9 @@ These are done by the domain owner in the Cloudflare dashboard, since the DNS li
 
 ## Environments and configuration
 
-| Variable            | Local                                      | Production                                     |
-| ------------------- | ------------------------------------------ | ---------------------------------------------- |
-| `VITE_API_BASE_URL` | `/api/v1` (Vite proxies `/api` to the API) | `https://adh-api.alfredo-dominguez.dev/api/v1` |
+| Variable            | Local                                                  | Production                              |
+| ------------------- | ------------------------------------------------------ | --------------------------------------- |
+| `VITE_API_BASE_URL` | empty: same origin, and Vite proxies `/api` to the API | `https://adh-api.alfredo-dominguez.dev` |
 
 Nothing else is configured at build time. The gateway's public key and tokenisation URL come
 from `GET /payment-terms` at runtime.

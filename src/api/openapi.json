@@ -1,0 +1,819 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v1/products": {
+      "get": {
+        "operationId": "listProducts",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from the previous page",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductPageResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List products available in the store",
+        "tags": ["Catalog"]
+      }
+    },
+    "/api/v1/products/{id}": {
+      "get": {
+        "operationId": "getProduct",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "prod-espresso-01",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No product with that id"
+          }
+        },
+        "summary": "Read a single product",
+        "tags": ["Catalog"]
+      }
+    },
+    "/api/v1/quotes": {
+      "get": {
+        "operationId": "quoteOrder",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "example": "prod-espresso-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "units",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 10,
+              "example": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "PRODUCT_NOT_FOUND"
+          },
+          "409": {
+            "description": "INSUFFICIENT_STOCK"
+          },
+          "422": {
+            "description": "Invalid product id or units"
+          }
+        },
+        "summary": "Price an order for the summary screen, without reserving anything",
+        "tags": ["Checkout"]
+      }
+    },
+    "/api/v1/transactions": {
+      "post": {
+        "operationId": "createTransaction",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransactionBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "headers": {
+              "Location": {
+                "description": "URL of the new transaction"
+              }
+            },
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "PRODUCT_NOT_FOUND"
+          },
+          "409": {
+            "description": "INSUFFICIENT_STOCK"
+          },
+          "422": {
+            "description": "INVALID_CUSTOMER, INVALID_DELIVERY_ADDRESS, INVALID_TRANSACTION or AMOUNT_MISMATCH"
+          }
+        },
+        "summary": "Open a PENDING transaction, reserving the units until it is paid or expires",
+        "tags": ["Checkout"]
+      }
+    },
+    "/api/v1/transactions/{id}": {
+      "get": {
+        "description": "While a submitted payment is PENDING, the gateway is asked for its outcome before answering, so polling this endpoint is enough to see the payment settle.",
+        "operationId": "getTransaction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The id is not a UUID"
+          },
+          "404": {
+            "description": "TRANSACTION_NOT_FOUND"
+          }
+        },
+        "summary": "Read a transaction, which is how the storefront resumes after a refresh",
+        "tags": ["Checkout"]
+      }
+    },
+    "/api/v1/transactions/{id}/delivery": {
+      "get": {
+        "operationId": "getTransactionDelivery",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The id is not a UUID"
+          },
+          "404": {
+            "description": "DELIVERY_NOT_FOUND — not approved, or unknown"
+          }
+        },
+        "summary": "The delivery assigned to an approved transaction",
+        "tags": ["Checkout"]
+      }
+    },
+    "/api/v1/payment-terms": {
+      "get": {
+        "operationId": "getPaymentTerms",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentTermsResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "PAYMENT_GATEWAY_UNAVAILABLE"
+          }
+        },
+        "summary": "Documents the buyer must accept, and where to tokenise the card",
+        "tags": ["Payments"]
+      }
+    },
+    "/api/v1/transactions/{id}/payment": {
+      "post": {
+        "description": "Answers 202: the gateway settles the payment a few seconds later. Poll GET /transactions/:id until the status is no longer PENDING. A declined card is a final status, not an error.",
+        "operationId": "payTransaction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "A new UUID per payment attempt. A retry with the same key returns the original response instead of charging again.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayTransactionBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or malformed Idempotency-Key"
+          },
+          "404": {
+            "description": "TRANSACTION_NOT_FOUND"
+          },
+          "409": {
+            "description": "TRANSACTION_NOT_PAYABLE, RESERVATION_EXPIRED or IDEMPOTENT_REQUEST_IN_PROGRESS"
+          },
+          "422": {
+            "description": "PAYMENT_REJECTED or IDEMPOTENCY_KEY_REUSED"
+          },
+          "503": {
+            "description": "PAYMENT_GATEWAY_UNAVAILABLE"
+          }
+        },
+        "summary": "Charge the card for a PENDING transaction",
+        "tags": ["Payments"]
+      }
+    }
+  },
+  "info": {
+    "title": "ADH Shop API",
+    "description": "Checkout API for the ADH Shop storefront",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "ProductResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "prod-espresso-01"
+          },
+          "name": {
+            "type": "string",
+            "example": "Cafetera espresso"
+          },
+          "description": {
+            "type": "string",
+            "example": "Manual espresso machine with a 1.5 L tank"
+          },
+          "priceInCents": {
+            "type": "number",
+            "example": 8999000,
+            "description": "Integer minor units, never a decimal"
+          },
+          "currency": {
+            "type": "string",
+            "example": "COP"
+          },
+          "imageUrl": {
+            "type": "string",
+            "example": "https://cdn.example.com/product/espresso.webp?Expires=…&Signature=…&Key-Pair-Id=…",
+            "description": "Signed and short-lived. Load it as returned; do not store it."
+          },
+          "availableUnits": {
+            "type": "number",
+            "example": 12,
+            "description": "Units a customer can buy right now"
+          },
+          "isPurchasable": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "priceInCents",
+          "currency",
+          "imageUrl",
+          "availableUnits",
+          "isPurchasable"
+        ]
+      },
+      "ProductPageResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductResponse"
+            }
+          },
+          "nextCursor": {
+            "type": "object",
+            "nullable": true,
+            "example": "eyJQSyI6IlBST0RVQ1QjMSJ9",
+            "description": "Pass back as ?cursor= to read the next page. Null when there is no more."
+          }
+        },
+        "required": ["items", "nextCursor"]
+      },
+      "AmountsResponse": {
+        "type": "object",
+        "properties": {
+          "productInCents": {
+            "type": "number",
+            "example": 8999000
+          },
+          "baseFeeInCents": {
+            "type": "number",
+            "example": 50000
+          },
+          "deliveryFeeInCents": {
+            "type": "number",
+            "example": 120000
+          },
+          "totalInCents": {
+            "type": "number",
+            "example": 9169000
+          },
+          "currency": {
+            "type": "string",
+            "example": "COP"
+          }
+        },
+        "required": [
+          "productInCents",
+          "baseFeeInCents",
+          "deliveryFeeInCents",
+          "totalInCents",
+          "currency"
+        ]
+      },
+      "QuoteResponse": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "example": "prod-espresso-01"
+          },
+          "units": {
+            "type": "number",
+            "example": 1
+          },
+          "unitPriceInCents": {
+            "type": "number",
+            "example": 8999000
+          },
+          "amounts": {
+            "$ref": "#/components/schemas/AmountsResponse"
+          }
+        },
+        "required": ["productId", "units", "unitPriceInCents", "amounts"]
+      },
+      "CustomerBody": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "example": "Laura Gómez"
+          },
+          "email": {
+            "type": "string",
+            "example": "laura@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+573001234567"
+          }
+        },
+        "required": ["fullName", "email", "phone"]
+      },
+      "DeliveryAddressBody": {
+        "type": "object",
+        "properties": {
+          "addressLine1": {
+            "type": "string",
+            "example": "Calle 93 # 11-26"
+          },
+          "addressLine2": {
+            "type": "string",
+            "example": "Apartamento 502"
+          },
+          "city": {
+            "type": "string",
+            "example": "Bogotá"
+          },
+          "region": {
+            "type": "string",
+            "example": "Cundinamarca"
+          },
+          "postalCode": {
+            "type": "string",
+            "example": "110221"
+          },
+          "country": {
+            "type": "string",
+            "example": "CO",
+            "description": "ISO 3166-1 alpha-2. Only CO is served."
+          }
+        },
+        "required": ["addressLine1", "city", "region", "country"]
+      },
+      "CreateTransactionBody": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "example": "prod-espresso-01"
+          },
+          "units": {
+            "type": "number",
+            "example": 1,
+            "minimum": 1,
+            "maximum": 10
+          },
+          "expectedTotalInCents": {
+            "type": "number",
+            "example": 9169000,
+            "description": "The total shown to the buyer, from GET /quotes. The server recomputes it and answers 422 AMOUNT_MISMATCH if it no longer matches, so a buyer is never charged an amount they did not see."
+          },
+          "customer": {
+            "$ref": "#/components/schemas/CustomerBody"
+          },
+          "deliveryAddress": {
+            "$ref": "#/components/schemas/DeliveryAddressBody"
+          }
+        },
+        "required": ["productId", "units", "expectedTotalInCents", "customer", "deliveryAddress"]
+      },
+      "PurchasedProductResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "prod-espresso-01"
+          },
+          "name": {
+            "type": "string",
+            "example": "Cafetera espresso Artigiano"
+          },
+          "units": {
+            "type": "number",
+            "example": 1
+          },
+          "unitPriceInCents": {
+            "type": "number",
+            "example": 8999000
+          }
+        },
+        "required": ["id", "name", "units", "unitPriceInCents"]
+      },
+      "CustomerResponse": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "example": "Laura Gómez"
+          },
+          "email": {
+            "type": "string",
+            "example": "l***@example.com",
+            "description": "Masked on purpose"
+          }
+        },
+        "required": ["fullName", "email"]
+      },
+      "DeliveryAddressResponse": {
+        "type": "object",
+        "properties": {
+          "addressLine1": {
+            "type": "string",
+            "example": "Calle 93 # 11-26"
+          },
+          "addressLine2": {
+            "type": "string",
+            "example": "Apartamento 502"
+          },
+          "city": {
+            "type": "string",
+            "example": "Bogotá"
+          },
+          "region": {
+            "type": "string",
+            "example": "Cundinamarca"
+          },
+          "postalCode": {
+            "type": "string",
+            "example": "110221"
+          },
+          "country": {
+            "type": "string",
+            "example": "CO"
+          }
+        },
+        "required": ["addressLine1", "city", "region", "country"]
+      },
+      "TransactionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1c2b9e-8f4a-4d7e-9a51-1b2c3d4e5f60"
+          },
+          "reference": {
+            "type": "string",
+            "example": "6f1c2b9e-8f4a-4d7e-9a51-1b2c3d4e5f60"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "APPROVED", "DECLINED", "VOIDED", "ERROR", "EXPIRED"],
+            "example": "PENDING"
+          },
+          "paymentSubmitted": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether a payment was already sent for this transaction. After a refresh, the storefront uses it to wait for the outcome instead of asking for the card again."
+          },
+          "product": {
+            "$ref": "#/components/schemas/PurchasedProductResponse"
+          },
+          "amounts": {
+            "$ref": "#/components/schemas/AmountsResponse"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/CustomerResponse"
+          },
+          "deliveryAddress": {
+            "$ref": "#/components/schemas/DeliveryAddressResponse"
+          },
+          "reservationExpiresAt": {
+            "type": "string",
+            "example": "2026-09-24T18:15:00.000Z",
+            "description": "Unpaid past this moment, the reserved units return to stock"
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-09-24T18:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-09-24T18:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "reference",
+          "status",
+          "paymentSubmitted",
+          "product",
+          "amounts",
+          "customer",
+          "deliveryAddress",
+          "reservationExpiresAt",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "DeliveryAddressView": {
+        "type": "object",
+        "properties": {
+          "addressLine1": {
+            "type": "string",
+            "example": "Calle 93 # 11-26"
+          },
+          "addressLine2": {
+            "type": "string",
+            "example": "Apartamento 502"
+          },
+          "city": {
+            "type": "string",
+            "example": "Bogotá"
+          },
+          "region": {
+            "type": "string",
+            "example": "Cundinamarca"
+          },
+          "postalCode": {
+            "type": "string",
+            "example": "110221"
+          },
+          "country": {
+            "type": "string",
+            "example": "CO"
+          }
+        },
+        "required": ["addressLine1", "city", "region", "country"]
+      },
+      "DeliveryResponse": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string",
+            "example": "6f1c2b9e-8f4a-4d7e-9a51-1b2c3d4e5f60"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PREPARING", "SHIPPED", "DELIVERED"],
+            "example": "PREPARING"
+          },
+          "productId": {
+            "type": "string",
+            "example": "prod-espresso-01"
+          },
+          "productName": {
+            "type": "string",
+            "example": "Cafetera espresso Artigiano"
+          },
+          "units": {
+            "type": "number",
+            "example": 1
+          },
+          "recipientName": {
+            "type": "string",
+            "example": "Laura Gómez"
+          },
+          "recipientPhone": {
+            "type": "string",
+            "example": "*********4567",
+            "description": "Masked on purpose"
+          },
+          "address": {
+            "$ref": "#/components/schemas/DeliveryAddressView"
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-09-24T18:00:05.000Z"
+          },
+          "estimatedDeliveryAt": {
+            "type": "string",
+            "example": "2026-09-29T18:00:05.000Z"
+          }
+        },
+        "required": [
+          "transactionId",
+          "status",
+          "productId",
+          "productName",
+          "units",
+          "recipientName",
+          "recipientPhone",
+          "address",
+          "createdAt",
+          "estimatedDeliveryAt"
+        ]
+      },
+      "AcceptanceDocument": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "documentUrl": {
+            "type": "string",
+            "description": "The document the buyer must be shown and accept"
+          }
+        },
+        "required": ["token", "documentUrl"]
+      },
+      "PaymentTermsResponse": {
+        "type": "object",
+        "properties": {
+          "publicKey": {
+            "type": "string",
+            "description": "Public key for card tokenisation. Public by design."
+          },
+          "cardTokenizationUrl": {
+            "type": "string",
+            "description": "Where the storefront posts card data to obtain a token"
+          },
+          "acceptance": {
+            "$ref": "#/components/schemas/AcceptanceDocument"
+          },
+          "personalDataAuthorization": {
+            "$ref": "#/components/schemas/AcceptanceDocument"
+          }
+        },
+        "required": ["publicKey", "cardTokenizationUrl", "acceptance", "personalDataAuthorization"]
+      },
+      "PayTransactionBody": {
+        "type": "object",
+        "properties": {
+          "cardToken": {
+            "type": "string",
+            "example": "tok_stagtest_5113_9eD2BcDd13A3e8E0a3b7cc5B0CA2b1b4",
+            "description": "Card token issued by the payment gateway from the storefront"
+          },
+          "installments": {
+            "type": "number",
+            "example": 1,
+            "minimum": 1,
+            "maximum": 36
+          },
+          "acceptanceToken": {
+            "type": "string",
+            "description": "From GET /payment-terms, once the buyer accepts the terms"
+          },
+          "personalDataAuthorizationToken": {
+            "type": "string",
+            "description": "From GET /payment-terms, once the buyer authorises the use of personal data"
+          }
+        },
+        "required": [
+          "cardToken",
+          "installments",
+          "acceptanceToken",
+          "personalDataAuthorizationToken"
+        ]
+      }
+    }
+  }
+}

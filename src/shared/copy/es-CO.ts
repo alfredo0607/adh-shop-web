@@ -21,7 +21,29 @@ export const esCO = {
   footer: {
     rights: '© {year} ADH Shop. Pagos procesados de forma segura.',
   },
+  notifications: {
+    dismiss: 'Cerrar aviso',
+    reference: 'Referencia: {requestId}',
+    region: 'Avisos',
+  },
   errors: {
+    api: {
+      generic: 'Algo salió mal. Intenta de nuevo.',
+      network: 'Sin conexión. Revisa tu internet e intenta de nuevo.',
+      timeout: 'La solicitud tardó demasiado. Intenta de nuevo.',
+      rateLimited: 'Demasiados intentos. Intenta de nuevo en {seconds} segundos.',
+      serviceUnavailable:
+        'El servicio no está disponible en este momento. Intenta en unos minutos.',
+      productNotFound: 'Este producto ya no está disponible.',
+      insufficientStock: 'Solo quedan {available} unidades de este producto.',
+      amountMismatch: 'El total cambió desde que lo viste. Revisa el nuevo resumen.',
+      reservationExpired: 'Tu reserva expiró. Vuelve a empezar la compra.',
+      paymentRejected: 'No pudimos procesar la tarjeta. Revisa los datos o usa otra.',
+      transactionNotPayable: 'Este pedido ya tiene un pago en curso.',
+      transactionNotFound: 'No encontramos este pedido.',
+      gatewayUnavailable: 'El servicio de pagos no responde. Intenta de nuevo en un momento.',
+      invalidDetails: 'Revisa los datos del formulario.',
+    },
     crash: {
       title: 'Algo salió mal',
       body: 'Tuvimos un problema al mostrar esta página. Tu compra no se ha visto afectada.',

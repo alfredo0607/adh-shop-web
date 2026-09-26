@@ -8,7 +8,7 @@
 | Build            | **Vite**                                                         | Instant dev server and small, hashed production bundles.                                                                                                                                                                                           |
 | State            | **Redux Toolkit** (slices)                                       | The brief requires Redux following Flux. Slices are Redux without the boilerplate.                                                                                                                                                                 |
 | Server data      | **RTK Query**                                                    | Caching, loading and error states, invalidation, and polling for the payment outcome, with no hand-written fetch code.                                                                                                                             |
-| Orchestration    | **One `createAsyncThunk`: `payOrder`**                           | See [When to use a thunk](#when-to-use-a-thunk).                                                                                                                                                                                                   |
+| Orchestration    | **One plain thunk: `payOrder`**                                  | See [When to use a thunk](#when-to-use-a-thunk).                                                                                                                                                                                                   |
 | Persistence      | **redux-remember**, with an allowlist                            | Lighter and better maintained than redux-persist. Only an allowlisted slice is stored; see [state.md](./state.md).                                                                                                                                 |
 | API types        | **`@rtk-query/codegen-openapi`** from the API's `/api/docs-json` | Endpoints and types are generated from the live contract, so a breaking API change fails the build instead of a user's checkout.                                                                                                                   |
 | Routing          | **React Router**                                                 | Each step has a URL, so reloading and the back button behave.                                                                                                                                                                                      |
@@ -54,8 +54,11 @@ src/
 │   └── router.tsx          Routes, each with an error boundary
 ├── api/
 │   ├── generated/          Endpoints and types generated from the API's OpenAPI document
-│   ├── api.ts              RTK Query base: base URL, tags, error normalisation
-│   └── gateway.ts          Card tokenisation, sent straight to the payment gateway
+│   ├── emptyApi.ts         The empty RTK Query API the generated endpoints attach to
+│   ├── baseQuery.ts        Base URL, timeout, error normalisation, retries for reads
+│   ├── index.ts            Tags and cache rules layered on the generated endpoints
+│   ├── openapi.json        Snapshot of the API contract the code is generated from
+│   └── gateway.ts          Card tokenisation: a plain function, not an endpoint
 ├── features/
 │   ├── catalog/            Product page, product card, unit selector
 │   ├── checkout/
@@ -110,15 +113,26 @@ component**. There is exactly one in the plan, `payOrder`:
 3. `POST /transactions/{id}/payment` with the token.
 4. Mark the payment as submitted; the status screen then polls for the outcome.
 
-The thunk calls RTK Query endpoints with `dispatch(endpoint.initiate(...)).unwrap()`; it
-never calls `fetch` itself. A single request is an RTK Query endpoint, never a thunk.
-Wrapping one request in a thunk is the pre-RTK-Query pattern, and adds code that RTK Query
-already provides.
+The thunk calls the API through RTK Query endpoints with
+`dispatch(endpoint.initiate(...)).unwrap()`. A single API request is an RTK Query endpoint,
+never a thunk. Wrapping one request in a thunk is the pre-RTK-Query pattern, and adds code
+that RTK Query already provides.
+
+Two exceptions, both about card data:
+
+- **`payOrder` is a plain thunk, not `createAsyncThunk`.** `createAsyncThunk` puts its
+  argument in `meta.arg` of every `pending`, `fulfilled` and `rejected` action, so the card
+  would travel through the store, the listener middleware and the Redux DevTools. A plain
+  thunk takes the card as a function argument and dispatches only `paymentSubmitting`,
+  `paymentSubmitted` and `paymentFailed`, which carry no card data.
+- **Tokenisation is a plain function in `api/gateway.ts`, not an RTK Query endpoint.** RTK
+  Query keeps every call's arguments in the cache as `originalArgs`. `tokenizeCard` is a
+  `fetch` call that returns the token and keeps nothing.
 
 ## The API contract
 
-- **Base URL**: `https://adh-api.alfredo-dominguez.dev/api/v1` in production, from
-  `VITE_API_BASE_URL`.
+- **Base URL**: the API's origin, `https://adh-api.alfredo-dominguez.dev` in production, from
+  `VITE_API_BASE_URL`. The generated endpoints carry the `/api/v1/...` path themselves.
 - **CORS**: the production API answers preflights only for this storefront's origin,
   `https://adh-shop.alfredo-dominguez.dev`. Local development does not widen that: the Vite
   dev server proxies `/api` to the API, so the browser only ever talks to `localhost` and
