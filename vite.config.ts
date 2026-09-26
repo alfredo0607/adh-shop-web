@@ -31,15 +31,15 @@ export default defineConfig({
           groups: [
             {
               name: 'react',
-              test: /node_modules[\/](react|react-dom|scheduler|react-router)[\/]/,
+              test: /node_modules[\\/](react|react-dom|scheduler|react-router)[\\/]/,
               priority: 3,
             },
             {
               name: 'state',
-              test: /node_modules[\/](@reduxjs|react-redux|redux|redux-remember|immer|reselect)[\/]/,
+              test: /node_modules[\\/](@reduxjs|react-redux|redux|redux-remember|immer|reselect)[\\/]/,
               priority: 2,
             },
-            { name: 'ui', test: /node_modules[\/](@radix-ui|lucide-react)[\/]/, priority: 1 },
+            { name: 'ui', test: /node_modules[\\/](@radix-ui|lucide-react)[\\/]/, priority: 1 },
           ],
         },
       },
