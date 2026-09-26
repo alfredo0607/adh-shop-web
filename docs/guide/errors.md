@@ -25,16 +25,16 @@ conversion, so nothing downstream parses a response body or checks `navigator.on
 // shared/errors/appError.ts
 export type AppError =
   | {
-      kind: "api";
+      kind: 'api';
       status: number;
       code: ApiErrorCode;
       requestId?: string;
       details?: unknown;
     }
-  | { kind: "rate-limited"; retryAfterSeconds: number }
-  | { kind: "network" } // offline, DNS, CORS, connection reset
-  | { kind: "timeout" }
-  | { kind: "unknown"; cause: unknown };
+  | { kind: 'rate-limited'; retryAfterSeconds: number }
+  | { kind: 'network' } // offline, DNS, CORS, connection reset
+  | { kind: 'timeout' }
+  | { kind: 'unknown'; cause: unknown };
 ```
 
 | Source                                           | Becomes                                             |

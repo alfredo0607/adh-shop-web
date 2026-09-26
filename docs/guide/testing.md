@@ -12,6 +12,16 @@
 Vitest would be the natural pairing with Vite, and it was considered. The brief names Jest,
 so points are not risked on it.
 
+### ESM-only dependencies
+
+Tests run with Node's `--experimental-vm-modules` (set in the `test` scripts). React Router 8
+is published as ESM only and uses `import.meta`, which cannot be compiled down to the
+CommonJS that Jest runs by default. With VM modules, Jest loads such packages natively, and
+no third-party code is transformed. Our own code still goes through SWC.
+
+`import.meta.env` is read in exactly one module, `shared/lib/runtime.ts`, which tests replace
+with a stub.
+
 ### jsdom setup for Radix
 
 Radix Primitives rely on browser APIs that jsdom does not implement. The shared setup file

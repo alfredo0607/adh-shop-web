@@ -18,7 +18,7 @@ interface CheckoutState {
   delivery: DeliveryDetails | null; // buyer name, email, phone, address
   transactionId: string | null; // set once POST /transactions succeeds
   idempotencyKey: string | null; // one per payment attempt
-  paymentStatus: "idle" | "submitting" | "submitted" | "failed";
+  paymentStatus: 'idle' | 'submitting' | 'submitted' | 'failed';
   lastError: ApiErrorCode | null; // the API's error code, never a message
 }
 ```
@@ -47,7 +47,7 @@ redux-remember stores exactly one key: `checkout`. Everything else is left out o
 
 ```ts
 // app/persistence.ts
-export const PERSISTED_SLICES = ["checkout"] as const;
+export const PERSISTED_SLICES = ['checkout'] as const;
 ```
 
 - **Never persisted:** card number, CVC, expiry, holder name, the card token (single-use and

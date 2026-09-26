@@ -21,19 +21,19 @@ export const cardSchema = z.object({
   number: z
     .string()
     .transform(digitsOnly)
-    .refine(passesLuhn, "card.number.invalid")
-    .refine((n) => detectBrand(n) !== "unknown", "card.number.unsupported"),
+    .refine(passesLuhn, 'card.number.invalid')
+    .refine((n) => detectBrand(n) !== 'unknown', 'card.number.unsupported'),
   expiry: z
     .string()
-    .regex(/^\d{2}\/\d{2}$/, "card.expiry.format")
-    .refine(notExpired, "card.expiry.past"),
-  cvc: z.string().regex(/^\d{3,4}$/, "card.cvc.invalid"),
+    .regex(/^\d{2}\/\d{2}$/, 'card.expiry.format')
+    .refine(notExpired, 'card.expiry.past'),
+  cvc: z.string().regex(/^\d{3,4}$/, 'card.cvc.invalid'),
   holder: z
     .string()
     .trim()
-    .min(5, "card.holder.short")
+    .min(5, 'card.holder.short')
     .max(60)
-    .regex(/^[\p{L} ]+$/u, "card.holder.letters"),
+    .regex(/^[\p{L} ]+$/u, 'card.holder.letters'),
   installments: z.coerce.number().int().min(1).max(36),
 });
 ```
