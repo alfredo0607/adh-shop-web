@@ -15,8 +15,8 @@ step.
 |    4 | **Card and delivery modal**  | Card number with Luhn and live VISA / Mastercard detection and logos, expiry, CVC, holder, installments · delivery form · schemas in `schemas/`, react-hook-form                                                                                                                                   | ✅ Done |
 |    5 | **Summary and payment**      | Backdrop with product amount, base fee and delivery fee · acceptance of the gateway's terms · create the transaction · the `payOrder` thunk                                                                                                                                                        | ✅ Done |
 |    6 | **Status and resilience**    | Status screen with polling · approved / declined / expired states · delivery details · resuming after a reload · back to the product with fresh stock                                                                                                                                              | ✅ Done |
-|    7 | **Hosting** (adh-shop-infra) | S3 + CloudFront + OAC + ACM · SPA fallback · security headers and CSP · OIDC deploy role                                                                                                                                                                                                           | ⏳ Next |
-|    8 | **Release and README**       | CD pipeline · production build · README with screenshots, the live URL and coverage results                                                                                                                                                                                                        | ⬜      |
+|    7 | **Hosting** (adh-shop-infra) | S3 + CloudFront + OAC + ACM · app routes served by a CloudFront Function · security headers and CSP · OIDC deploy role · CD on merge to `main` (live at https://adh-shop.alfredo-dominguez.dev)                                                                                                    | ✅ Done |
+|    8 | **Release and README**       | README with screenshots, the live URL and coverage results                                                                                                                                                                                                                                         | ⬜      |
 
 Libraries are added by the step that first uses them (Redux Toolkit and RTK Query in step 2,
 react-hook-form, zod and Radix in step 4), so no dependency is ever declared before it is
@@ -34,4 +34,4 @@ imported.
 | Decision                                      | Needed by | Status                                                               |
 | --------------------------------------------- | --------- | -------------------------------------------------------------------- |
 | Visual direction ([palette.md](./palette.md)) | Step 3    | ✅ Confirmed: "Coffee & Origin" palette, contrast-checked to WCAG AA |
-| Storefront domain                             | Step 7    | `adh-shop.alfredo-dominguez.dev`, already allowed by the API's CORS  |
+| Storefront domain                             | Step 7    | ✅ Live: `adh-shop.alfredo-dominguez.dev`, allowed by the API's CORS |
