@@ -1,20 +1,38 @@
 .section {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5);
+  /* Clears the sticky header when a new page scrolls the grid into view. */
+  scroll-margin-top: 8rem;
+}
+
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
 }
 
 .title {
   font-size: var(--text-2xl);
 }
 
+.count {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
 /*
- * As many columns as fit, each at least 15rem: one column on a 320 px phone,
- * two on a large phone, three or four on a desktop. No breakpoints needed.
+ * Two columns on a phone, as shoppers expect, so a page is two screens rather
+ * than eight. From 600 px, as many columns of at least 14rem as fit: three on
+ * a tablet, four on a desktop.
  */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
-  gap: var(--space-5);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
   padding: 0;
   list-style: none;
 }
@@ -58,12 +76,26 @@
   text-align: center;
 }
 
+.emptyIcon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--color-border-strong);
+}
+
+.emptyTitle {
+  color: var(--color-text);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
 .icon {
   width: var(--icon-size);
   height: var(--icon-size);
 }
 
-.more {
-  display: flex;
-  justify-content: center;
+@media (min-width: 600px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    gap: var(--space-5);
+  }
 }

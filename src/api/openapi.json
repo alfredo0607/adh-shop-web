@@ -80,23 +80,13 @@
         "operationId": "quoteOrder",
         "parameters": [
           {
-            "name": "productId",
+            "name": "items",
             "required": true,
             "in": "query",
+            "description": "Comma-separated `productId:units` pairs, one per product, up to 10. Each product may appear once, with 1 to 10 units.",
             "schema": {
-              "example": "prod-espresso-01",
+              "example": "prod-espresso-01:1,prod-grinder-02:2",
               "type": "string"
-            }
-          },
-          {
-            "name": "units",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 10,
-              "example": 1,
-              "type": "number"
             }
           }
         ],
@@ -118,10 +108,10 @@
             "description": "INSUFFICIENT_STOCK"
           },
           "422": {
-            "description": "Invalid product id or units"
+            "description": "Malformed items, or INVALID_TRANSACTION"
           }
         },
-        "summary": "Price an order for the summary screen, without reserving anything",
+        "summary": "Price an order of one or more products, without reserving anything",
         "tags": ["Checkout"]
       }
     },
@@ -165,7 +155,7 @@
             "description": "INVALID_CUSTOMER, INVALID_DELIVERY_ADDRESS, INVALID_TRANSACTION or AMOUNT_MISMATCH"
           }
         },
-        "summary": "Open a PENDING transaction, reserving the units until it is paid or expires",
+        "summary": "Open a PENDING transaction for one or more products, reserving every unit until it is paid or expires",
         "tags": ["Checkout"]
       }
     },
@@ -351,7 +341,13 @@
           },
           "description": {
             "type": "string",
-            "example": "Manual espresso machine with a 1.5 L tank"
+            "example": "Cafetera espresso manual con tanque de 1,5 L"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["coffee-makers", "grinders", "brewing", "accessories", "coffee"],
+            "example": "coffee-makers",
+            "description": "A stable code; the storefront chooses the words shown for it"
           },
           "priceInCents": {
             "type": "number",
@@ -381,6 +377,7 @@
           "id",
           "name",
           "description",
+          "category",
           "priceInCents",
           "currency",
           "imageUrl",
@@ -406,12 +403,40 @@
         },
         "required": ["items", "nextCursor"]
       },
+      "OrderLineResponse": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "example": "prod-espresso-01"
+          },
+          "name": {
+            "type": "string",
+            "example": "Cafetera espresso Artigiano"
+          },
+          "units": {
+            "type": "number",
+            "example": 1
+          },
+          "unitPriceInCents": {
+            "type": "number",
+            "example": 8999000
+          },
+          "lineTotalInCents": {
+            "type": "number",
+            "example": 8999000,
+            "description": "unitPriceInCents × units"
+          }
+        },
+        "required": ["productId", "name", "units", "unitPriceInCents", "lineTotalInCents"]
+      },
       "AmountsResponse": {
         "type": "object",
         "properties": {
           "productInCents": {
             "type": "number",
-            "example": 8999000
+            "example": 8999000,
+            "description": "The sum of every line, before fees"
           },
           "baseFeeInCents": {
             "type": "number",
@@ -441,23 +466,34 @@
       "QuoteResponse": {
         "type": "object",
         "properties": {
+          "items": {
+            "description": "In the order they were asked for",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderLineResponse"
+            }
+          },
+          "amounts": {
+            "$ref": "#/components/schemas/AmountsResponse"
+          }
+        },
+        "required": ["items", "amounts"]
+      },
+      "OrderItemBody": {
+        "type": "object",
+        "properties": {
           "productId": {
             "type": "string",
             "example": "prod-espresso-01"
           },
           "units": {
             "type": "number",
-            "example": 1
-          },
-          "unitPriceInCents": {
-            "type": "number",
-            "example": 8999000
-          },
-          "amounts": {
-            "$ref": "#/components/schemas/AmountsResponse"
+            "example": 1,
+            "minimum": 1,
+            "maximum": 10
           }
         },
-        "required": ["productId", "units", "unitPriceInCents", "amounts"]
+        "required": ["productId", "units"]
       },
       "CustomerBody": {
         "type": "object",
@@ -511,15 +547,14 @@
       "CreateTransactionBody": {
         "type": "object",
         "properties": {
-          "productId": {
-            "type": "string",
-            "example": "prod-espresso-01"
-          },
-          "units": {
-            "type": "number",
-            "example": 1,
-            "minimum": 1,
-            "maximum": 10
+          "items": {
+            "minItems": 1,
+            "maxItems": 10,
+            "description": "One entry per product; each product may appear once.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemBody"
+            }
           },
           "expectedTotalInCents": {
             "type": "number",
@@ -533,29 +568,7 @@
             "$ref": "#/components/schemas/DeliveryAddressBody"
           }
         },
-        "required": ["productId", "units", "expectedTotalInCents", "customer", "deliveryAddress"]
-      },
-      "PurchasedProductResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "prod-espresso-01"
-          },
-          "name": {
-            "type": "string",
-            "example": "Cafetera espresso Artigiano"
-          },
-          "units": {
-            "type": "number",
-            "example": 1
-          },
-          "unitPriceInCents": {
-            "type": "number",
-            "example": 8999000
-          }
-        },
-        "required": ["id", "name", "units", "unitPriceInCents"]
+        "required": ["items", "expectedTotalInCents", "customer", "deliveryAddress"]
       },
       "CustomerResponse": {
         "type": "object",
@@ -623,8 +636,11 @@
             "example": false,
             "description": "Whether a payment was already sent for this transaction. After a refresh, the storefront uses it to wait for the outcome instead of asking for the card again."
           },
-          "product": {
-            "$ref": "#/components/schemas/PurchasedProductResponse"
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderLineResponse"
+            }
           },
           "amounts": {
             "$ref": "#/components/schemas/AmountsResponse"
@@ -654,7 +670,7 @@
           "reference",
           "status",
           "paymentSubmitted",
-          "product",
+          "items",
           "amounts",
           "customer",
           "deliveryAddress",
@@ -662,6 +678,24 @@
           "createdAt",
           "updatedAt"
         ]
+      },
+      "DeliveryItemView": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "example": "prod-espresso-01"
+          },
+          "name": {
+            "type": "string",
+            "example": "Cafetera espresso Artigiano"
+          },
+          "units": {
+            "type": "number",
+            "example": 1
+          }
+        },
+        "required": ["productId", "name", "units"]
       },
       "DeliveryAddressView": {
         "type": "object",
@@ -705,17 +739,12 @@
             "enum": ["PREPARING", "SHIPPED", "DELIVERED"],
             "example": "PREPARING"
           },
-          "productId": {
-            "type": "string",
-            "example": "prod-espresso-01"
-          },
-          "productName": {
-            "type": "string",
-            "example": "Cafetera espresso Artigiano"
-          },
-          "units": {
-            "type": "number",
-            "example": 1
+          "items": {
+            "description": "Every product in the parcel",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeliveryItemView"
+            }
           },
           "recipientName": {
             "type": "string",
@@ -741,9 +770,7 @@
         "required": [
           "transactionId",
           "status",
-          "productId",
-          "productName",
-          "units",
+          "items",
           "recipientName",
           "recipientPhone",
           "address",

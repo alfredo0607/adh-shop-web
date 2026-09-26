@@ -17,8 +17,7 @@ const injectedRtkApi = api.injectEndpoints({
       query: (queryArg) => ({
         url: `/api/v1/quotes`,
         params: {
-          productId: queryArg.productId,
-          units: queryArg.units,
+          items: queryArg.items,
         },
       }),
     }),
@@ -69,8 +68,8 @@ export type GetProductApiArg = {
 };
 export type QuoteOrderApiResponse = /** status 200  */ QuoteResponse;
 export type QuoteOrderApiArg = {
-  productId: string;
-  units: number;
+  /** Comma-separated `productId:units` pairs, one per product, up to 10. Each product may appear once, with 1 to 10 units. */
+  items: string;
 };
 export type CreateTransactionApiResponse = /** status 201  */ TransactionResponse;
 export type CreateTransactionApiArg = {
@@ -97,6 +96,8 @@ export type ProductResponse = {
   id: string;
   name: string;
   description: string;
+  /** A stable code; the storefront chooses the words shown for it */
+  category: 'coffee-makers' | 'grinders' | 'brewing' | 'accessories' | 'coffee';
   /** Integer minor units, never a decimal */
   priceInCents: number;
   currency: string;
@@ -111,7 +112,16 @@ export type ProductPageResponse = {
   /** Pass back as ?cursor= to read the next page. Null when there is no more. */
   nextCursor: string | null;
 };
+export type OrderLineResponse = {
+  productId: string;
+  name: string;
+  units: number;
+  unitPriceInCents: number;
+  /** unitPriceInCents × units */
+  lineTotalInCents: number;
+};
 export type AmountsResponse = {
+  /** The sum of every line, before fees */
   productInCents: number;
   baseFeeInCents: number;
   deliveryFeeInCents: number;
@@ -119,16 +129,9 @@ export type AmountsResponse = {
   currency: string;
 };
 export type QuoteResponse = {
-  productId: string;
-  units: number;
-  unitPriceInCents: number;
+  /** In the order they were asked for */
+  items: OrderLineResponse[];
   amounts: AmountsResponse;
-};
-export type PurchasedProductResponse = {
-  id: string;
-  name: string;
-  units: number;
-  unitPriceInCents: number;
 };
 export type CustomerResponse = {
   fullName: string;
@@ -149,7 +152,7 @@ export type TransactionResponse = {
   status: 'PENDING' | 'APPROVED' | 'DECLINED' | 'VOIDED' | 'ERROR' | 'EXPIRED';
   /** Whether a payment was already sent for this transaction. After a refresh, the storefront uses it to wait for the outcome instead of asking for the card again. */
   paymentSubmitted: boolean;
-  product: PurchasedProductResponse;
+  items: OrderLineResponse[];
   amounts: AmountsResponse;
   customer: CustomerResponse;
   deliveryAddress: DeliveryAddressResponse;
@@ -157,6 +160,10 @@ export type TransactionResponse = {
   reservationExpiresAt: string;
   createdAt: string;
   updatedAt: string;
+};
+export type OrderItemBody = {
+  productId: string;
+  units: number;
 };
 export type CustomerBody = {
   fullName: string;
@@ -173,12 +180,17 @@ export type DeliveryAddressBody = {
   country: string;
 };
 export type CreateTransactionBody = {
-  productId: string;
-  units: number;
+  /** One entry per product; each product may appear once. */
+  items: OrderItemBody[];
   /** The total shown to the buyer, from GET /quotes. The server recomputes it and answers 422 AMOUNT_MISMATCH if it no longer matches, so a buyer is never charged an amount they did not see. */
   expectedTotalInCents: number;
   customer: CustomerBody;
   deliveryAddress: DeliveryAddressBody;
+};
+export type DeliveryItemView = {
+  productId: string;
+  name: string;
+  units: number;
 };
 export type DeliveryAddressView = {
   addressLine1: string;
@@ -191,9 +203,8 @@ export type DeliveryAddressView = {
 export type DeliveryResponse = {
   transactionId: string;
   status: 'PREPARING' | 'SHIPPED' | 'DELIVERED';
-  productId: string;
-  productName: string;
-  units: number;
+  /** Every product in the parcel */
+  items: DeliveryItemView[];
   recipientName: string;
   /** Masked on purpose */
   recipientPhone: string;

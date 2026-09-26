@@ -4,6 +4,7 @@ export const aProduct = (overrides: Partial<ProductResponse> = {}): ProductRespo
   id: 'prod-espresso-01',
   name: 'Cafetera espresso Artigiano',
   description: 'Cafetera espresso manual con tanque de 1,5 L.',
+  category: 'coffee-makers',
   priceInCents: 8_999_000,
   currency: 'COP',
   imageUrl: 'https://cdn.test/product/prod-espresso-01.webp?signed',
@@ -19,12 +20,15 @@ export const aTransaction = (
   reference: '6f1c2b9e-8f4a-4d7e-9a51-1b2c3d4e5f60',
   status: 'PENDING',
   paymentSubmitted: false,
-  product: {
-    id: 'prod-espresso-01',
-    name: 'Cafetera espresso Artigiano',
-    units: 1,
-    unitPriceInCents: 8_999_000,
-  },
+  items: [
+    {
+      productId: 'prod-espresso-01',
+      name: 'Cafetera espresso Artigiano',
+      units: 1,
+      unitPriceInCents: 8_999_000,
+      lineTotalInCents: 8_999_000,
+    },
+  ],
   amounts: {
     productInCents: 8_999_000,
     baseFeeInCents: 50_000,

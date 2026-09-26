@@ -1,7 +1,14 @@
-import { adhShopApi, type ListProductsApiResponse } from './generated/adhShopApi';
+import {
+  adhShopApi,
+  type ListProductsApiResponse,
+  type ProductResponse,
+} from './generated/adhShopApi';
 
-/** Products per catalogue page. The API accepts up to 50. */
-export const PRODUCT_PAGE_SIZE = 12;
+/** Products per request when reading the catalogue: the most the API accepts. */
+export const CATALOGUE_PAGE_SIZE = 50;
+
+/** A ceiling on requests per read, so a looping cursor can never spin forever. */
+const MAX_CATALOGUE_PAGES = 10;
 
 /**
  * The generated endpoints, plus the behaviour a document cannot describe: which
@@ -27,7 +34,10 @@ export const api = adhShopApi
       // Opening a transaction reserves units, so the product's stock is stale.
       createTransaction: {
         invalidatesTags: (_result, _error, { createTransactionBody }) => [
-          { type: 'Product' as const, id: createTransactionBody.productId },
+          ...createTransactionBody.items.map((item) => ({
+            type: 'Product' as const,
+            id: item.productId,
+          })),
           { type: 'Product' as const, id: 'LIST' },
         ],
       },
@@ -42,33 +52,44 @@ export const api = adhShopApi
   .injectEndpoints({
     endpoints: (build) => ({
       /**
-       * The catalogue, page by page. `GET /products` pages with an opaque
-       * cursor, which is exactly an infinite query's page parameter: RTK Query
-       * keeps the pages together and knows whether there is a next one.
+       * The whole catalogue, in one list. The storefront filters, sorts and
+       * pages it in the browser, which is right for a catalogue this size: a
+       * filter applied by DynamoDB to a cursor-paged query returns short or
+       * empty pages. Underneath, `GET /products` is still read page by page
+       * with its cursor, so nothing changes if the catalogue grows.
        */
-      listProductPages: build.infiniteQuery<ListProductsApiResponse, void, string | null>({
-        infiniteQueryOptions: {
-          initialPageParam: null,
-          getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+      listCatalogue: build.query<ProductResponse[], void>({
+        async queryFn(_arg, _api, _extraOptions, baseQuery) {
+          const products: ProductResponse[] = [];
+          let cursor: string | null = null;
+
+          for (let page = 0; page < MAX_CATALOGUE_PAGES; page += 1) {
+            const result = await baseQuery({
+              url: '/api/v1/products',
+              params: {
+                limit: CATALOGUE_PAGE_SIZE,
+                ...(cursor === null ? {} : { cursor }),
+              },
+            });
+            if (result.error !== undefined) return { error: result.error };
+
+            const body = result.data as ListProductsApiResponse;
+            products.push(...body.items);
+            cursor = body.nextCursor;
+            if (cursor === null) break;
+          }
+
+          return { data: products };
         },
-        query: ({ pageParam }) => ({
-          url: '/api/v1/products',
-          params: {
-            limit: PRODUCT_PAGE_SIZE,
-            ...(pageParam === null ? {} : { cursor: pageParam }),
-          },
-        }),
         providesTags: (result) => [
           { type: 'Product' as const, id: 'LIST' },
-          ...(result?.pages.flatMap((page) =>
-            page.items.map((product) => ({ type: 'Product' as const, id: product.id })),
-          ) ?? []),
+          ...(result?.map((product) => ({ type: 'Product' as const, id: product.id })) ?? []),
         ],
       }),
     }),
   });
 
-export const { useListProductPagesInfiniteQuery } = api;
+export const { useListCatalogueQuery } = api;
 
 export type EndpointName = keyof typeof api.endpoints;
 

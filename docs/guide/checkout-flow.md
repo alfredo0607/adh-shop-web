@@ -7,7 +7,7 @@ product**. This is how each maps to routes, state and API calls.
 
 | Route                    | Screen                                                                    | Brief step |
 | ------------------------ | ------------------------------------------------------------------------- | ---------- |
-| `/`                      | Catalogue: every product with its stock and price                         | 1          |
+| `/`                      | Catalogue: search, filters, sorting and pages, all in the query string    | 1          |
 | `/products/:id`          | Product page: description, price, stock, units, "Pay with credit card"    | 1          |
 | `/products/:id/checkout` | Card and delivery form, in a modal over the product page                  | 2          |
 | `/checkout/summary`      | Summary in a backdrop: product amount, base fee, delivery fee, terms      | 3          |
