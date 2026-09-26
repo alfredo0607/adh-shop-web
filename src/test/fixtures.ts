@@ -1,4 +1,9 @@
-import type { ProductResponse, TransactionResponse } from '@/api';
+import type {
+  DeliveryResponse,
+  PaymentTermsResponse,
+  ProductResponse,
+  TransactionResponse,
+} from '@/api';
 
 export const aProduct = (overrides: Partial<ProductResponse> = {}): ProductResponse => ({
   id: 'prod-espresso-01',
@@ -53,4 +58,33 @@ export const aTransaction = (
 export const apiError = (code: string, details?: Record<string, unknown>) => ({
   error: { code, message: 'Developer-facing message', ...(details ? { details } : {}) },
   requestId: 'req-123',
+});
+
+export const aDelivery = (overrides: Partial<DeliveryResponse> = {}): DeliveryResponse => ({
+  transactionId: '6f1c2b9e-8f4a-4d7e-9a51-1b2c3d4e5f60',
+  status: 'PREPARING',
+  items: [{ productId: 'prod-espresso-01', name: 'Cafetera espresso Artigiano', units: 1 }],
+  recipientName: 'Laura Gómez',
+  recipientPhone: '******4567',
+  address: {
+    addressLine1: 'Calle 93 # 11-26',
+    city: 'Bogotá',
+    region: 'Bogotá D.C.',
+    country: 'CO',
+  },
+  createdAt: '2026-09-25T18:00:05.000Z',
+  estimatedDeliveryAt: '2026-09-30T18:00:05.000Z',
+  ...overrides,
+});
+
+export const TOKENIZATION_URL = 'https://gateway.test/v1/tokens/cards';
+
+export const somePaymentTerms = (): PaymentTermsResponse => ({
+  publicKey: 'pub_test_key',
+  cardTokenizationUrl: TOKENIZATION_URL,
+  acceptance: { token: 'acceptance-token', documentUrl: 'https://gateway.test/terms.pdf' },
+  personalDataAuthorization: {
+    token: 'personal-data-token',
+    documentUrl: 'https://gateway.test/personal-data.pdf',
+  },
 });

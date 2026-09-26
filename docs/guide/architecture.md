@@ -65,17 +65,19 @@ src/
 │   ├── catalog/            Catalogue grid, filters (URL state), product card and page, unit selector
 │   ├── checkout/
 │   │   ├── checkoutSlice.ts
-│   │   ├── payOrder.ts     The one thunk
+│   │   ├── payOrder.ts     The one thunk: open the transaction, tokenise, pay
+│   │   ├── orderSettled.ts Closes the order once the payment has an outcome
 │   │   ├── schemas/        card.ts (Luhn, brand, expiry) · delivery.ts (zod)
 │   │   ├── session.ts      The card, in memory, while the checkout is open
 │   │   ├── CheckoutLayout  Route /checkout: the order, with the form or the summary over it
 │   │   ├── CheckoutForm    Card and delivery form, in a modal
+│   │   ├── OrderSummary    The summary in a backdrop: fees, terms, the pay button
 │   │   └── SummaryBackdrop/
-│   └── order-status/       Final status, polling, delivery details
+│   └── orders/             Final status, polling, delivery details
 ├── shared/
 │   ├── ui/                 Our components: Modal, Drawer, Toast (on Radix Primitives), Field,
 │   │                       TextInput, SelectInput, Button, Money, Stepper, Pagination,
-│   │                       PaymentMethods (the accepted card brands), Drawer
+│   │                       PaymentMethods (the accepted card brands), Drawer, Backdrop
 │   ├── errors/             AppError, normalisation, error-code → copy key mapping
 │   ├── copy/               es-CO.ts: every customer-facing text
 │   ├── lib/                Formatting, idempotency keys, configuration

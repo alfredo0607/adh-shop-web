@@ -60,19 +60,43 @@ looking.
 
 ## Resuming after a reload
 
-On start, after redux-remember rehydrates `checkout`, the app routes by what is stored:
+On start, once redux-remember has read the stored `checkout`, `ResumeOrder` (in the app
+shell) decides once, and only when the app opens on the home page:
 
-| Stored state                                       | Goes to                                        | Why                                                                                                     |
-| -------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `paymentStatus = submitted`                        | `/orders/{transactionId}` and resumes polling  | The payment is in flight or done; the server knows the outcome                                          |
-| `paymentStatus = submitting`                       | `/orders/{transactionId}`                      | The request may or may not have arrived; polling finds out, and a retry reuses the same idempotency key |
-| A transaction, no payment, reservation still valid | `/checkout/resumen`, asking for the card again | Card data is never stored                                                                               |
-| A transaction whose reservation expired            | Product page, with a notice                    | The units went back to stock; start again                                                               |
-| Items and delivery, no transaction                 | `/checkout/resumen`                            | Nothing reserved yet                                                                                    |
-| Nothing                                            | `/`                                            |                                                                                                         |
+| Stored state                                    | Goes to                            | Why                                                                                                          |
+| ----------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| A transaction with `paymentStatus` `submitted`  | `/orders/{transactionId}`, polling | The payment is in flight or done; the server knows the outcome                                               |
+| A transaction with `paymentStatus` `submitting` | `/orders/{transactionId}`, polling | The request may or may not have arrived; polling finds out, and a retry would reuse the same idempotency key |
+| Anything else                                   | Stays where it is                  | The cart and the order are kept, and "Ir a pagar" or "Pagar" pick them up; the card is asked for again       |
 
-The transaction response carries `paymentSubmitted` and `reservationExpiresAt`, which is
-everything this decision needs.
+Only a payment in flight is resumed automatically: money may have moved, and the buyer must
+see the outcome. Everything else waits for the buyer, who may have come back to browse. A
+reload on `/checkout/resumen` sends the buyer back to the form, because the card is never
+stored.
+
+## Final status
+
+| Status                          | Screen                                                                           |
+| ------------------------------- | -------------------------------------------------------------------------------- |
+| `APPROVED`                      | Confirmation, amount paid, delivery address, estimated date (from the delivery)  |
+| `DECLINED`, `VOIDED`, `ERROR`   | What happened, nothing was charged, "Try another card", which starts a new order |
+| `EXPIRED`                       | The reservation ran out before payment                                           |
+| Still `PENDING` after 2 minutes | "Still processing", with a manual refresh; the order is safe to leave            |
+
+`/orders/:id` reads the transaction and, while it is `PENDING`, reads it again every two
+seconds: the API asks the gateway on each read, so polling is all it takes to see the payment
+settle. After two minutes it stops and offers "Revisar de nuevo".
+
+Once the outcome is final, `orderSettled` closes the order this browser placed (and only that
+one, never an order opened from a shared link):
+
+- an approved order from the cart empties the cart; a declined one keeps it;
+- the checkout is reset, delivery details included;
+- the products' stock is marked stale, so the store and the product page show what is left.
+
+An approved order shows the delivery (`GET /transactions/{id}/delivery`): who receives it,
+the masked phone, the address and the estimated date. Any other outcome offers "Intentar de
+nuevo", which starts the same order again.
 
 ## Errors
 
@@ -91,15 +115,6 @@ is what each one means for the flow.
 | `PAYMENT_GATEWAY_UNAVAILABLE`, `503` | any           | "El servicio de pagos no responde", with a retry that reuses the same key |
 | `429 RATE_LIMITED`                   | any           | "Demasiados intentos", with the retry delay from `Retry-After`            |
 | Network failure                      | any           | "Sin conexión"; nothing is resubmitted automatically                      |
-
-## Final status
-
-| Status                          | Screen                                                                           |
-| ------------------------------- | -------------------------------------------------------------------------------- |
-| `APPROVED`                      | Confirmation, amount paid, delivery address, estimated date (from the delivery)  |
-| `DECLINED`, `VOIDED`, `ERROR`   | What happened, nothing was charged, "Try another card", which starts a new order |
-| `EXPIRED`                       | The reservation ran out before payment                                           |
-| Still `PENDING` after 2 minutes | "Still processing", with a manual refresh; the order is safe to leave            |
 
 ## Card form rules
 

@@ -20,6 +20,8 @@ except to the payment gateway.**
   outlet context. Leaving the checkout unmounts the route and the card with it; a reload on
   the summary sends the buyer back to the form, because there is nothing to restore it from.
 - The summary shows only the brand, the last four digits and the installments.
+- The card token is single-use, and the payment request that carries it is reset as soon
+  as it returns, so the token does not stay in RTK Query's cache either.
 - On a failed payment the buyer re-enters the card.
 - Inputs use `autocomplete="cc-number"`, `cc-exp`, `cc-csc` and `cc-name`, so browsers and
   password managers treat them as payment fields, and `inputmode="numeric"` for the mobile

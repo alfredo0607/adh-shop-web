@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw';
 
 import { createStore } from '@/app/store';
 import { STORAGE_PREFIX } from '@/app/persistence';
-import { apiError } from '@/test/fixtures';
+import { apiError, somePaymentTerms } from '@/test/fixtures';
 import { memoryStorage } from '@/test/memoryStorage';
 import { renderRoute } from '@/test/renderRoute';
 import { API, server } from '@/test/server';
@@ -166,6 +166,7 @@ describe('checkout form', () => {
         quoted = new URL(request.url).searchParams.get('items');
         return HttpResponse.json(QUOTE);
       }),
+      http.get(`${API}/payment-terms`, () => HttpResponse.json(somePaymentTerms())),
     );
     const { store, storage } = setup();
     await openForm(store);
@@ -174,7 +175,7 @@ describe('checkout form', () => {
     await fillDelivery();
     await userEvent.click(screen.getByRole('button', { name: 'Continuar al resumen' }));
 
-    const summary = await screen.findByRole('region', { name: 'Resumen de tu pedido' });
+    const summary = await screen.findByRole('dialog', { name: 'Resumen de tu pedido' });
     expect(await within(summary).findByText('$ 176.690')).toBeVisible();
     expect(within(summary).getByText('VISA terminada en 4242')).toBeVisible();
     expect(within(summary).getByText('3 cuotas')).toBeVisible();
@@ -199,14 +200,17 @@ describe('checkout form', () => {
   });
 
   it('goes back to the form with everything the buyer typed', async () => {
-    server.use(http.get(`${API}/quotes`, () => HttpResponse.json(QUOTE)));
+    server.use(
+      http.get(`${API}/quotes`, () => HttpResponse.json(QUOTE)),
+      http.get(`${API}/payment-terms`, () => HttpResponse.json(somePaymentTerms())),
+    );
     await openForm();
     await fillCard('5555555555554444');
     await fillDelivery();
     await userEvent.click(screen.getByRole('button', { name: 'Continuar al resumen' }));
     await screen.findByText('Mastercard terminada en 4444');
 
-    await userEvent.click(screen.getByRole('link', { name: 'Editar datos' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Volver al formulario' }));
 
     await screen.findByRole('dialog', { name: 'Pago con tarjeta de crédito' });
     expect(field('Número de la tarjeta')).toHaveValue('5555 5555 5555 4444');
@@ -264,6 +268,7 @@ describe('checkout form', () => {
           ? HttpResponse.json(apiError('INTERNAL_ERROR'), { status: 500 })
           : HttpResponse.json(QUOTE);
       }),
+      http.get(`${API}/payment-terms`, () => HttpResponse.json(somePaymentTerms())),
     );
     await openForm();
     await fillCard();

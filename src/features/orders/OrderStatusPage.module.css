@@ -1,0 +1,146 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+  max-width: 36rem;
+  margin-inline: auto;
+}
+
+.loading {
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.outcome {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.outcomeIcon {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+/* Every outcome has its own icon and title, so colour is never the only signal. */
+.pending .outcomeIcon {
+  color: var(--color-accent);
+  animation: breathe 1.6s ease-in-out infinite;
+}
+
+.approved {
+  background: color-mix(in srgb, var(--color-chip) 30%, var(--color-surface-raised));
+}
+
+.approved .outcomeIcon {
+  color: var(--color-success);
+}
+
+.declined .outcomeIcon,
+.error .outcomeIcon {
+  color: var(--color-danger);
+}
+
+.expired .outcomeIcon {
+  color: var(--color-text-muted);
+}
+
+.title {
+  font-size: var(--text-2xl);
+}
+
+.reference {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+}
+
+.cardTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-lg);
+}
+
+.items {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.item,
+.total {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.total {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  font-weight: 700;
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.estimate {
+  font-weight: 600;
+}
+
+.estimate::first-letter {
+  text-transform: uppercase;
+}
+
+.icon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.actions {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+}
+
+.actions > button {
+  width: 100%;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  font-weight: 600;
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.5;
+    transform: scale(0.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pending .outcomeIcon {
+    animation: none;
+  }
+}

@@ -5,6 +5,7 @@ import { ProductPage } from '@/features/catalog/ProductPage';
 import { CheckoutForm } from '@/features/checkout/CheckoutForm';
 import { CheckoutLayout } from '@/features/checkout/CheckoutLayout';
 import { OrderSummary } from '@/features/checkout/OrderSummary';
+import { OrderStatusPage } from '@/features/orders/OrderStatusPage';
 
 import { NotFoundScreen, RouteErrorScreen } from './errors/RouteErrorScreen';
 import { AppShell } from './layout/AppShell';
@@ -33,6 +34,7 @@ export const routes: RouteObject[] = [
               { path: 'resumen', element: <OrderSummary /> },
             ],
           },
+          { path: 'orders/:id', element: <OrderStatusPage /> },
           { path: '*', element: <NotFoundScreen /> },
         ],
       },
