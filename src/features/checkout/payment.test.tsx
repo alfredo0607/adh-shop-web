@@ -181,17 +181,14 @@ describe('summary and payment', () => {
         card_holder: 'Laura Gomez',
       },
     ]);
-    expect(seen.payments).toEqual([
-      {
-        key: expect.stringMatching(UUID),
-        body: {
-          cardToken: 'tok_test_123',
-          installments: 3,
-          acceptanceToken: 'acceptance-token',
-          personalDataAuthorizationToken: 'personal-data-token',
-        },
-      },
-    ]);
+    expect(seen.payments).toHaveLength(1);
+    expect(seen.payments[0]?.key).toMatch(UUID);
+    expect(seen.payments[0]?.body).toEqual({
+      cardToken: 'tok_test_123',
+      installments: 3,
+      acceptanceToken: 'acceptance-token',
+      personalDataAuthorizationToken: 'personal-data-token',
+    });
 
     // Neither the card nor its token stays anywhere.
     const everywhere = JSON.stringify(store.getState()) + [...storage.entries.values()].join('');
