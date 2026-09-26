@@ -1,0 +1,111 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One release at a time, queued rather than cancelled: a release cancelled
+# between its two uploads would leave the bucket half old, half new.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # The same checks as a pull request, on the commit being released. Nothing
+  # reaches production that CI has not passed on exactly this code.
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Build and publish
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+      url: https://adh-shop.alfredo-dominguez.dev
+
+    permissions:
+      # Required to request the OIDC token. There is no AWS key in this
+      # repository: the role's trust policy accepts only this repository's
+      # production environment.
+      id-token: write
+      contents: read
+
+    env:
+      SITE_BUCKET: ${{ vars.SITE_BUCKET }}
+      DISTRIBUTION_ID: ${{ vars.DISTRIBUTION_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # A build without the API's address still succeeds, and then every call
+      # goes to the storefront's own domain. Fail here instead of in the browser.
+      - name: Check the environment
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          AWS_DEPLOY_ROLE: ${{ vars.AWS_DEPLOY_ROLE }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          missing=0
+          for name in VITE_API_BASE_URL AWS_DEPLOY_ROLE AWS_REGION SITE_BUCKET DISTRIBUTION_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::The production environment has no variable $name"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: Build
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+        run: pnpm build
+
+      - name: Assume the deployment role
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: storefront-${{ github.run_id }}
+
+      # Bundles first, index.html last. Every file under assets/ has a content
+      # hash in its name, so it never changes and can be cached for a year. A
+      # new index.html is published only once everything it points at exists,
+      # and old bundles stay for visitors still running the previous release.
+      # Source maps stay out: they are for debugging, not for visitors.
+      - name: Upload the bundles
+        run: |
+          aws s3 sync dist/assets "s3://$SITE_BUCKET/assets" \
+            --exclude "*.map" \
+            --cache-control "public, max-age=31536000, immutable"
+
+      - name: Upload the entry files
+        run: |
+          aws s3 sync dist "s3://$SITE_BUCKET" \
+            --exclude "assets/*" \
+            --exclude "*.map" \
+            --delete \
+            --cache-control "no-cache"
+
+      # index.html is revalidated anyway; the invalidation makes the edge drop
+      # its copy now instead of at its next revalidation.
+      - name: Invalidate the edge cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "$DISTRIBUTION_ID" \
+            --paths "/index.html" "/favicon.svg" "/" \
+            --query 'Invalidation.Id' --output text

@@ -51,16 +51,21 @@ the API base URL.
 
 Served only over HTTPS by CloudFront, with a response headers policy:
 
-| Header                      | Value                                                                                                                                                                              |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains`                                                                                                                                              |
-| `Content-Security-Policy`   | `default-src 'self'`; `connect-src` the API, the gateway's tokenisation host; `img-src 'self'` and the image CDN; `frame-ancestors 'none'`; `object-src 'none'`; `base-uri 'self'` |
-| `X-Content-Type-Options`    | `nosniff`                                                                                                                                                                          |
-| `Referrer-Policy`           | `strict-origin-when-cross-origin`                                                                                                                                                  |
-| `Permissions-Policy`        | camera, microphone and geolocation disabled                                                                                                                                        |
+| Header                      | Value                                                                                                                                                                                                                                                                                         |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Header                      | Value                                                                                                                                                                                                                                                                                         |
+| --------------------------- | -----                                                                                                                                                                                                                                                                                         |
+| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains; preload`                                                                                                                                                                                                                                                |
+| `Content-Security-Policy`   | `default-src 'self'`; `script-src 'self'`; `style-src 'self' 'unsafe-inline'`; `connect-src` the API and the gateway's tokenisation host; `img-src 'self' data:` and the image CDN; `font-src 'self'`; `frame-ancestors 'none'`; `object-src 'none'`; `base-uri 'self'`; `form-action 'self'` |
+| `X-Frame-Options`           | `DENY`                                                                                                                                                                                                                                                                                        |
+| `X-Content-Type-Options`    | `nosniff`                                                                                                                                                                                                                                                                                     |
+| `Referrer-Policy`           | `strict-origin-when-cross-origin`                                                                                                                                                                                                                                                             |
+| `Permissions-Policy`        | camera, microphone, geolocation and the Payment Request API disabled                                                                                                                                                                                                                          |
 
 The CSP means that even an injected script could not send card data anywhere except the two
-hosts the page already talks to.
+hosts the page already talks to. Scripts are `'self'` only. Styles allow `'unsafe-inline'`
+because the dialogs' scroll lock injects a `<style>` element at runtime. A style cannot run
+code, and anything it could load is still limited by `img-src` and `font-src`.
 
 ## Rendering
 
