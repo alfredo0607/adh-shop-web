@@ -92,7 +92,10 @@ const serve = (overrides: Parameters<typeof server.use> = []): Seen => {
 const field = (label: string): HTMLElement => screen.getByLabelText(label);
 
 /** From the form to the summary, as a buyer does it. */
-const reachSummary = async (source: 'cart' | 'buy-now' = 'cart') => {
+const reachSummary = async ({
+  source = 'cart',
+  termsLoaded = true,
+}: { source?: 'cart' | 'buy-now'; termsLoaded?: boolean } = {}) => {
   const storage = memoryStorage();
   const store = createStore({ storage });
   store.dispatch(itemAdded({ productId: 'prod-espresso-01', units: 1 }));
@@ -110,7 +113,7 @@ const reachSummary = async (source: 'cart' | 'buy-now' = 'cart') => {
 
   const summary = await screen.findByRole('dialog', { name: 'Resumen de tu pedido' });
   await within(summary).findByText('$ 91.690');
-  await within(summary).findByRole('checkbox', { name: /reglamento de uso/ });
+  if (termsLoaded) await within(summary).findByRole('checkbox', { name: /reglamento de uso/ });
   return { store, storage, summary };
 };
 
@@ -134,6 +137,29 @@ describe('summary and payment', () => {
       'https://gateway.test/terms.pdf',
     );
     expect(within(summary).getByRole('button', { name: /^Pagar \$\s91\.690$/ })).toBeEnabled();
+  });
+
+  it('offers a retry when the payment terms cannot be loaded', async () => {
+    let calls = 0;
+    serve([
+      http.get(`${API}/payment-terms`, () => {
+        calls += 1;
+        // The first request and the base query's two automatic retries.
+        return calls <= 3
+          ? HttpResponse.json(apiError('INTERNAL_ERROR'), { status: 500 })
+          : HttpResponse.json(somePaymentTerms());
+      }),
+    ]);
+    const { summary } = await reachSummary({ termsLoaded: false });
+
+    expect(await within(summary).findByRole('alert')).toHaveTextContent(
+      'No pudimos cargar los términos de pago.',
+    );
+    await userEvent.click(within(summary).getByRole('button', { name: 'Reintentar' }));
+
+    expect(
+      await within(summary).findByRole('checkbox', { name: /reglamento de uso/ }),
+    ).toBeVisible();
   });
 
   it('asks for both acceptances before paying, and sends nothing until then', async () => {
@@ -198,7 +224,7 @@ describe('summary and payment', () => {
 
   it('empties the cart once an order from the cart is approved, and forgets the delivery', async () => {
     serve();
-    const { store, summary } = await reachSummary('cart');
+    const { store, summary } = await reachSummary({ source: 'cart' });
 
     await acceptTerms(summary);
     await pay(summary);
@@ -211,7 +237,7 @@ describe('summary and payment', () => {
 
   it('leaves the cart alone when the buyer bought now', async () => {
     serve();
-    const { store, summary } = await reachSummary('buy-now');
+    const { store, summary } = await reachSummary({ source: 'buy-now' });
 
     await acceptTerms(summary);
     await pay(summary);

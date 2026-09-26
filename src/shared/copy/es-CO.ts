@@ -72,6 +72,7 @@ export const esCO = {
     checkout: 'Ir a pagar',
     keepShopping: 'Seguir comprando',
     loading: 'Cargando tu carrito…',
+    loadError: 'No pudimos cargar los precios y la disponibilidad de tu carrito.',
   },
   checkout: {
     title: 'Pago con tarjeta de crédito',

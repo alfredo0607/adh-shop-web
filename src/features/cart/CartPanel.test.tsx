@@ -1,12 +1,15 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 
 import { selectNotifications } from '@/app/notifications/notificationsSlice';
 import { routes } from '@/app/router';
 import { createStore } from '@/app/store';
 import { selectCheckout } from '@/features/checkout/checkoutSlice';
+import { apiError } from '@/test/fixtures';
 import { memoryStorage } from '@/test/memoryStorage';
 import { renderRoute } from '@/test/renderRoute';
+import { API, server } from '@/test/server';
 
 import { itemAdded } from './cartSlice';
 
@@ -121,6 +124,32 @@ describe('cart', () => {
       within(cart).getByRole('button', { name: 'Quitar Café de origen Huila 500 g del carrito' }),
     );
     expect(within(cart).getByRole('button', { name: 'Ir a pagar' })).toBeEnabled();
+  });
+
+  it('offers a retry when the catalogue fails, instead of calling the products unavailable', async () => {
+    // Three failures: the first request and the base query's two retries.
+    let calls = 0;
+    server.use(
+      http.get(`${API}/products`, () => {
+        calls += 1;
+        return calls <= 3
+          ? HttpResponse.json(apiError('INTERNAL_ERROR'), { status: 500 })
+          : undefined;
+      }),
+    );
+    renderRoute('/', routes, storeWith([{ productId: 'prod-espresso-01', units: 1 }]));
+
+    const cart = await openCart();
+
+    expect(await within(cart).findByRole('alert')).toHaveTextContent(
+      'No pudimos cargar los precios y la disponibilidad de tu carrito.',
+    );
+    expect(within(cart).queryByText('No disponible')).not.toBeInTheDocument();
+    expect(within(cart).queryByRole('button', { name: 'Ir a pagar' })).not.toBeInTheDocument();
+
+    await userEvent.click(within(cart).getByRole('button', { name: 'Reintentar' }));
+
+    expect(await within(cart).findByRole('button', { name: 'Ir a pagar' })).toBeEnabled();
   });
 
   it('starts an order with every product of the cart and opens the checkout', async () => {
