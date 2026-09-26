@@ -7,17 +7,25 @@ import { aProduct, apiError } from '@/test/fixtures';
 import { renderRoute } from '@/test/renderRoute';
 import { API, server } from '@/test/server';
 
-const cards = async () =>
-  within(await screen.findByRole('list', { name: 'Nuestros productos' })).findAllByRole('article');
+const grid = async (): Promise<HTMLElement> =>
+  screen.findByRole('list', { name: 'Nuestros productos' });
+
+const cards = async (): Promise<HTMLElement[]> => within(await grid()).findAllByRole('article');
+
+const names = async (): Promise<string[]> =>
+  (await cards()).map((card) => within(card).getByRole('heading').textContent ?? '');
+
+const count = (): HTMLElement => screen.getByText(/^Mostrando|^1 producto$/);
 
 describe('catalogue', () => {
-  it('shows every product with its price and stock, each linking to its page', async () => {
+  it('shows the first page: price, category and stock, each card linking to its product', async () => {
     renderRoute('/');
 
     expect(screen.getByRole('status')).toHaveTextContent('Cargando productos…');
 
-    const [espresso, grinder, beans] = await cards();
+    const [espresso, grinder] = await cards();
     expect(espresso).toHaveTextContent('Cafetera espresso Artigiano');
+    expect(espresso).toHaveTextContent('Cafeteras');
     expect(espresso).toHaveTextContent('$ 89.990');
     expect(espresso).toHaveTextContent('12 disponibles');
     expect(within(espresso!).getByRole('link')).toHaveAttribute(
@@ -25,7 +33,142 @@ describe('catalogue', () => {
       '/products/prod-espresso-01',
     );
     expect(grinder).toHaveTextContent('Últimas 3 unidades');
-    expect(beans).toHaveTextContent('Agotado');
+    expect(await cards()).toHaveLength(8);
+    expect(count()).toHaveTextContent('Mostrando 1–8 de 10 productos');
+  });
+
+  it('puts what cannot be bought after everything that can', async () => {
+    renderRoute('/?pagina=2');
+
+    expect(await names()).toEqual(['Café de origen Nariño 500 g', 'Café de origen Huila 500 g']);
+    expect((await cards())[1]).toHaveTextContent('Agotado');
+  });
+
+  it('moves between pages with numbered links', async () => {
+    renderRoute('/');
+    await grid();
+
+    const pagination = screen.getByRole('navigation', { name: 'Paginación del catálogo' });
+    expect(within(pagination).getByRole('link', { name: 'Página 1' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+
+    await userEvent.click(within(pagination).getByRole('link', { name: 'Página siguiente' }));
+
+    expect(await names()).toHaveLength(2);
+    expect(count()).toHaveTextContent('Mostrando 9–10 de 10 productos');
+    expect(within(pagination).getByRole('link', { name: 'Página 2' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(
+      within(pagination).queryByRole('link', { name: 'Página siguiente' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps the filters in the page links', async () => {
+    renderRoute('/?orden=nombre');
+    await grid();
+
+    expect(screen.getByRole('link', { name: 'Página 2' })).toHaveAttribute(
+      'href',
+      '/?orden=nombre&pagina=2',
+    );
+  });
+
+  it('opens with the filters of the link it was reached by', async () => {
+    renderRoute('/?categoria=molinos');
+
+    expect(await names()).toEqual(['Molino cónico Fresa']);
+    expect(screen.getByRole('button', { name: 'Molinos' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Todas' })).toHaveAttribute('aria-pressed', 'false');
+    expect(count()).toHaveTextContent('1 producto');
+  });
+
+  it('filters by one or more categories, and back to all', async () => {
+    renderRoute('/');
+    await grid();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Accesorios' }));
+    expect(await names()).toEqual([
+      'Jarra para leche 600 ml',
+      'Prensador de 58 mm',
+      'Filtros de papel × 100',
+    ]);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Molinos' }));
+    expect(await names()).toHaveLength(4);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Todas' }));
+    expect(await names()).toHaveLength(8);
+  });
+
+  it('searches by name and description, without minding accents', async () => {
+    renderRoute('/');
+    await grid();
+
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Buscar' }), 'cafe huila{Enter}');
+
+    expect(await names()).toEqual(['Café de origen Huila 500 g']);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Borrar búsqueda' }));
+    expect(await names()).toHaveLength(8);
+    expect(screen.getByRole('searchbox', { name: 'Buscar' })).toHaveValue('');
+  });
+
+  it('filters by price band and sorts', async () => {
+    renderRoute('/');
+    await grid();
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Precio' }), 'hasta-50000');
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: 'Ordenar por' }),
+      'precio-desc',
+    );
+
+    expect(await names()).toEqual([
+      'Molino cónico Fresa',
+      'Cafetera moka 6 tazas',
+      'Prensa francesa 1 L',
+      'Gotero cerámico',
+      'Prensador de 58 mm',
+      'Jarra para leche 600 ml',
+      'Café de origen Nariño 500 g',
+      'Café de origen Huila 500 g',
+    ]);
+  });
+
+  it('can leave out what is sold out', async () => {
+    renderRoute('/?categoria=cafe');
+    expect(await names()).toHaveLength(2);
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Solo disponibles' }));
+
+    expect(await names()).toEqual(['Café de origen Nariño 500 g']);
+  });
+
+  it('says when nothing matches, and clears the filters but keeps the order', async () => {
+    renderRoute('/?q=tetera&orden=nombre');
+
+    expect(await screen.findByText('Ningún producto coincide con tu búsqueda.')).toBeVisible();
+    expect(screen.queryByRole('navigation', { name: 'Paginación del catálogo' })).toBeNull();
+
+    const clear = screen.getAllByRole('button', { name: 'Limpiar filtros' });
+    await userEvent.click(clear[clear.length - 1]!);
+
+    expect(await names()).toHaveLength(8);
+    expect(screen.getByRole('combobox', { name: 'Ordenar por' })).toHaveValue('nombre');
+    expect(screen.getByRole('searchbox', { name: 'Buscar' })).toHaveValue('');
+  });
+
+  it('goes back to the first page when a filter changes', async () => {
+    renderRoute('/?pagina=2');
+    expect(await names()).toHaveLength(2);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Métodos de preparación' }));
+
+    expect(await names()).toEqual(['Prensa francesa 1 L', 'Gotero cerámico']);
   });
 
   it('says so when there is nothing to sell', async () => {
@@ -62,32 +205,6 @@ describe('catalogue', () => {
     expect(await cards()).toHaveLength(3);
   });
 
-  it('loads the next page with the cursor the API returned', async () => {
-    const cursors: (string | null)[] = [];
-    server.use(
-      http.get(`${API}/products`, ({ request }) => {
-        const url = new URL(request.url);
-        cursors.push(url.searchParams.get('cursor'));
-        expect(url.searchParams.get('limit')).toBe('12');
-        return url.searchParams.get('cursor') === 'page-2'
-          ? HttpResponse.json({
-              items: [aProduct({ id: 'prod-kettle-03', name: 'Hervidor de cuello de ganso' })],
-              nextCursor: null,
-            })
-          : HttpResponse.json({ items: [aProduct()], nextCursor: 'page-2' });
-      }),
-    );
-    renderRoute('/');
-
-    expect(await cards()).toHaveLength(1);
-    await userEvent.click(screen.getByRole('button', { name: 'Ver más productos' }));
-
-    expect(await screen.findByText('Hervidor de cuello de ganso')).toBeVisible();
-    expect(await cards()).toHaveLength(2);
-    expect(cursors).toEqual([null, 'page-2']);
-    expect(screen.queryByRole('button', { name: 'Ver más productos' })).not.toBeInTheDocument();
-  });
-
   it('keeps the layout when an image cannot load', async () => {
     renderRoute('/');
     const [espresso] = await cards();
@@ -98,5 +215,79 @@ describe('catalogue', () => {
     fireEvent.error(image);
 
     expect(within(espresso!).getByText('Imagen no disponible')).toBeVisible();
+  });
+
+  it('says favourites are coming, rather than doing nothing', async () => {
+    const { store } = renderRoute('/');
+    const [espresso] = await cards();
+
+    await userEvent.click(
+      within(espresso!).getByRole('button', {
+        name: 'Guardar Cafetera espresso Artigiano en favoritos',
+      }),
+    );
+
+    expect(selectNotifications(store.getState())).toEqual([
+      expect.objectContaining({
+        tone: 'info',
+        message: 'Esta función estará disponible muy pronto.',
+      }),
+    ]);
+  });
+});
+
+describe('header', () => {
+  it('takes the buyer to the catalogue search from any page', async () => {
+    renderRoute('/products/prod-espresso-01');
+    await screen.findByRole('heading', { level: 1, name: 'Cafetera espresso Artigiano' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Buscar productos' }));
+
+    await grid();
+    expect(screen.getByRole('searchbox', { name: 'Buscar' })).toHaveFocus();
+  });
+
+  it('keeps the current filters when searching from the catalogue', async () => {
+    renderRoute('/?categoria=molinos');
+    expect(await names()).toHaveLength(1);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Buscar productos' }));
+
+    expect(await names()).toHaveLength(1);
+    expect(screen.getByRole('searchbox', { name: 'Buscar' })).toHaveFocus();
+  });
+
+  it('links to each category, marking the one shown', async () => {
+    renderRoute('/?categoria=cafe');
+    await grid();
+
+    const categories = screen.getByRole('navigation', { name: 'Categorías' });
+    expect(within(categories).getByRole('link', { name: 'Café' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(within(categories).getByRole('link', { name: 'Molinos' })).toHaveAttribute(
+      'href',
+      '/?categoria=molinos',
+    );
+  });
+
+  it.each(['Favoritos', 'Mi cuenta'])('says %s is coming soon', async (label) => {
+    const { store } = renderRoute('/');
+
+    await userEvent.click(screen.getByRole('button', { name: label }));
+
+    expect(selectNotifications(store.getState())[0]?.message).toBe(
+      'Esta función estará disponible muy pronto.',
+    );
+  });
+
+  it('shows the accepted card brands in the footer', () => {
+    renderRoute('/');
+
+    const footer = screen.getByRole('contentinfo');
+    const brands = within(footer).getByRole('list', { name: 'Medios de pago' });
+    expect(within(brands).getByRole('img', { name: 'VISA' })).toBeInTheDocument();
+    expect(within(brands).getByRole('img', { name: 'Mastercard' })).toBeInTheDocument();
   });
 });

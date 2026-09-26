@@ -83,14 +83,27 @@ are defined in step 1 of the [roadmap](./roadmap.md).
 | **Card field**                | Groups digits as typed; the brand logo fades in from the BIN; the error appears under the field, not in an alert |
 | **Money**                     | Formats integer cents with `Intl.NumberFormat('es-CO', { currency: 'COP' })`, only at render time                |
 
+## Layout of the store
+
+- **Header**: a slim announcement bar, then the sticky brand bar with search, favourites and
+  account. From 960 px a second row lists the categories; on phones the catalogue's own
+  scrolling row of chips does that job and the header stays short. Favourites and the
+  account are outside this exercise: they answer with a "coming soon" notice instead of
+  doing nothing.
+- **Catalogue grid**: two columns on a phone, as shoppers expect, and as many columns of at
+  least 14rem as fit from 600 px.
+- **Every page grid is `minmax(0, 1fr)`**, never the implicit `auto` column: an auto column
+  grows to its widest child, such as the scrolling row of chips, and pushes the page sideways
+  on a phone. A `fieldset` also needs `min-inline-size: 0` for the same reason.
+
 ## Icons
 
 - **lucide-react** for interface icons: one line weight, sized with a `--icon-size` token,
   coloured with `currentColor` so an icon always matches its text.
 - Decorative icons are `aria-hidden`; an icon that carries meaning on its own has an
   accessible label.
-- **Card brands** use their official acceptance marks (VISA, Mastercard) as local SVG
-  components in `CardBrandIcon`, shown at the size and clear space the brands require. Lucide
+- **Card brands** use their official acceptance marks (VISA, Mastercard) as local SVG files
+  in `shared/ui/PaymentMethods`, shown at the size and clear space the brands require. Lucide
   deliberately ships no brand logos.
 - Every status also shows an icon next to its colour (check, cross, clock), so meaning never
   depends on colour alone.

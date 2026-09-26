@@ -86,9 +86,15 @@ outlives the page.
 ## Server state rules
 
 - Every request is an RTK Query endpoint, generated from the API's OpenAPI document.
-- The catalogue is an **infinite query** (`listProductPages`, added in `api/index.ts`). The
-  API's opaque `nextCursor` is the page parameter, so RTK Query keeps the pages together and
-  knows whether there is another one. The page size is 12.
+- The catalogue is **one query for the whole catalogue** (`listCatalogue`, added in
+  `api/index.ts`). It follows the API's cursor in pages of 50, the most the API accepts, and
+  stops after 10 pages. Filtering, sorting and pagination then happen in the browser: with
+  a catalogue this size that is instant, and a filter applied by DynamoDB to a cursor-paged
+  query would return short or empty pages.
+- **Filters live in the URL**, not in Redux: `?q=&categoria=&precio=&disponibles=1&orden=&pagina=`.
+  A filtered page can be shared, reloaded and reached with the back button, and there is no
+  second copy to keep in sync. `features/catalog/filters.ts` reads and writes them, ignoring
+  anything it does not recognise, and holds the pure filter, sort and pagination functions.
 - The product page refetches its product every time it opens (`refetchOnMountOrArgChange`),
   so a buyer coming back from a purchase sees the stock that is left.
 - Tags: `Product` (invalidated when an order closes, so stock is fresh on the product page) and

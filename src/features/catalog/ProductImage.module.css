@@ -25,5 +25,7 @@
 }
 
 .fallbackText {
+  padding-inline: var(--space-2);
   font-size: var(--text-sm);
+  text-align: center;
 }

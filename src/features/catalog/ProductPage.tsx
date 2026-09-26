@@ -10,8 +10,10 @@ import { isAppError } from '@/shared/errors/appError';
 import { Button } from '@/shared/ui/Button/Button';
 import { ErrorScreen } from '@/shared/ui/ErrorScreen/ErrorScreen';
 import { Money } from '@/shared/ui/Money/Money';
+import { PaymentMethods } from '@/shared/ui/PaymentMethods/PaymentMethods';
 import { Stepper } from '@/shared/ui/Stepper/Stepper';
 
+import { CATEGORY_SLUGS } from './filters';
 import styles from './ProductPage.module.css';
 import { ProductImage } from './ProductImage';
 import { MAX_UNITS_PER_ORDER, maxSelectableUnits, stockLevel } from './stock';
@@ -93,6 +95,14 @@ const ProductDetails = ({ product }: { product: ProductResponse }): ReactNode =>
         <ProductImage src={product.imageUrl} alt={product.name} priority />
 
         <div className={styles.info}>
+          {product.category === undefined ? null : (
+            <Link
+              to={`/?categoria=${CATEGORY_SLUGS[product.category]}`}
+              className={styles.category}
+            >
+              {t(`categories.${product.category}`)}
+            </Link>
+          )}
           <h1 className={styles.name}>{product.name}</h1>
           <Money
             className={styles.price}
@@ -137,10 +147,13 @@ const ProductDetails = ({ product }: { product: ProductResponse }): ReactNode =>
             <p className={styles.note}>{t('product.feesNote')}</p>
           </div>
 
-          <p className={styles.secure}>
-            <ShieldCheck aria-hidden className={styles.icon} />
-            {t('product.secure')}
-          </p>
+          <div className={styles.payments}>
+            <p className={styles.secure}>
+              <ShieldCheck aria-hidden className={styles.icon} />
+              {t('product.secure')}
+            </p>
+            <PaymentMethods />
+          </div>
         </div>
       </div>
     </article>

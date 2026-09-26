@@ -51,6 +51,7 @@ src/
 │   ├── store.ts
 │   ├── persistence.ts      What redux-remember stores, and nothing else
 │   ├── listeners.ts        Global error listener (toasts for unexpected failures)
+│   ├── layout/             Shell, header (actions, category navigation) and footer
 │   └── router.tsx          Routes, each with an error boundary
 ├── api/
 │   ├── generated/          Endpoints and types generated from the API's OpenAPI document
@@ -60,7 +61,7 @@ src/
 │   ├── openapi.json        Snapshot of the API contract the code is generated from
 │   └── gateway.ts          Card tokenisation: a plain function, not an endpoint
 ├── features/
-│   ├── catalog/            Product page, product card, unit selector
+│   ├── catalog/            Catalogue grid, filters (URL state), product card and page, unit selector
 │   ├── checkout/
 │   │   ├── checkoutSlice.ts
 │   │   ├── payOrder.ts     The one thunk
@@ -70,7 +71,8 @@ src/
 │   └── order-status/       Final status, polling, delivery details
 ├── shared/
 │   ├── ui/                 Our components on Radix Primitives: Dialog, Toast, Checkbox,
-│   │                       Select, Field, Button, Backdrop, CardBrandIcon, Money, Spinner
+│   │                       Select, Field, Button, Backdrop, Money, Stepper, Pagination,
+│   │                       PaymentMethods (the accepted card brands)
 │   ├── errors/             AppError, normalisation, error-code → copy key mapping
 │   ├── copy/               es-CO.ts: every customer-facing text
 │   ├── lib/                Formatting, idempotency keys, configuration

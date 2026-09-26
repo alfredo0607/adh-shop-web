@@ -2,9 +2,12 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  max-width: 100%;
+  /* A rounded rectangle, not a pill, so a label that wraps in a narrow card still looks deliberate. */
+  line-height: 1.25;
   width: fit-content;
   padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-md);
   font-size: var(--text-sm);
   font-weight: 600;
 }
@@ -29,4 +32,11 @@
 .soldOut {
   background: var(--color-surface);
   color: var(--color-danger);
+}
+
+@media (max-width: 599px) {
+  .badge {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-xs);
+  }
 }

@@ -22,6 +22,57 @@ describe('API client', () => {
     expect(result.data?.items[0]?.id).toBe('prod-espresso-01');
   });
 
+  it('reads the whole catalogue, following the cursor page by page', async () => {
+    const requests: URL[] = [];
+    server.use(
+      http.get(`${API}/products`, ({ request }) => {
+        const url = new URL(request.url);
+        requests.push(url);
+        return url.searchParams.get('cursor') === 'page-2'
+          ? HttpResponse.json({ items: [aProduct({ id: 'b' })], nextCursor: null })
+          : HttpResponse.json({ items: [aProduct({ id: 'a' })], nextCursor: 'page-2' });
+      }),
+    );
+
+    const result = await newStore().dispatch(api.endpoints.listCatalogue.initiate());
+
+    expect(result.data?.map((product) => product.id)).toEqual(['a', 'b']);
+    expect(requests.map((url) => url.searchParams.get('limit'))).toEqual(['50', '50']);
+    expect(requests.map((url) => url.searchParams.get('cursor'))).toEqual([null, 'page-2']);
+  });
+
+  it('stops reading a catalogue whose cursor never ends', async () => {
+    let requests = 0;
+    server.use(
+      http.get(`${API}/products`, () => {
+        requests += 1;
+        return HttpResponse.json({
+          items: [aProduct({ id: `p${requests}` })],
+          nextCursor: 'again',
+        });
+      }),
+    );
+
+    const result = await newStore().dispatch(api.endpoints.listCatalogue.initiate());
+
+    expect(requests).toBe(10);
+    expect(result.data).toHaveLength(10);
+  });
+
+  it('fails the catalogue when any page fails', async () => {
+    server.use(
+      http.get(`${API}/products`, ({ request }) =>
+        new URL(request.url).searchParams.get('cursor') === null
+          ? HttpResponse.json({ items: [aProduct()], nextCursor: 'page-2' })
+          : HttpResponse.json(apiError('INVALID_CURSOR'), { status: 422 }),
+      ),
+    );
+
+    const result = await newStore().dispatch(api.endpoints.listCatalogue.initiate());
+
+    expect(result.error).toMatchObject({ kind: 'api', code: 'INVALID_CURSOR' });
+  });
+
   it('turns an API failure into an AppError', async () => {
     server.use(
       http.post(`${API}/transactions`, () =>
@@ -32,8 +83,7 @@ describe('API client', () => {
     const result = await newStore().dispatch(
       api.endpoints.createTransaction.initiate({
         createTransactionBody: {
-          productId: 'prod-espresso-01',
-          units: 1,
+          items: [{ productId: 'prod-espresso-01', units: 1 }],
           expectedTotalInCents: 1,
           customer: { fullName: 'Laura Gómez', email: 'laura@example.com', phone: '3001234567' },
           deliveryAddress: {
@@ -135,8 +185,7 @@ describe('API client', () => {
       await newStore().dispatch(
         api.endpoints.createTransaction.initiate({
           createTransactionBody: {
-            productId: 'p',
-            units: 1,
+            items: [{ productId: 'p', units: 1 }],
             expectedTotalInCents: 1,
             customer: { fullName: 'Laura Gómez', email: 'l@example.com', phone: '3001234567' },
             deliveryAddress: {
@@ -163,7 +212,7 @@ describe('API client', () => {
         }),
       );
 
-      await newStore().dispatch(api.endpoints.quoteOrder.initiate({ productId: 'p', units: 5 }));
+      await newStore().dispatch(api.endpoints.quoteOrder.initiate({ items: 'p:5' }));
 
       expect(calls).toBe(1);
     });
@@ -187,8 +236,7 @@ describe('API client', () => {
     await store.dispatch(
       api.endpoints.createTransaction.initiate({
         createTransactionBody: {
-          productId: 'prod-espresso-01',
-          units: 1,
+          items: [{ productId: 'prod-espresso-01', units: 1 }],
           expectedTotalInCents: 9_169_000,
           customer: { fullName: 'Laura Gómez', email: 'l@example.com', phone: '3001234567' },
           deliveryAddress: {

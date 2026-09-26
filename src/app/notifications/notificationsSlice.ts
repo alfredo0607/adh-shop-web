@@ -1,5 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
+import { t } from '@/shared/copy/es-CO';
+
 export interface Notification {
   /** Identical messages share an id, so a repeated failure updates one toast instead of stacking. */
   id: string;
@@ -35,3 +37,11 @@ export const { notified, dismissed } = notificationsSlice.actions;
 
 export const selectNotifications = (state: { notifications: NotificationsState }): Notification[] =>
   state.notifications.items;
+
+/**
+ * For the controls that are part of the storefront's layout but not of this
+ * exercise (favourites, the account): an honest "coming soon" rather than a
+ * button that silently does nothing.
+ */
+export const comingSoon = (): PayloadAction<Notification> =>
+  notified({ id: 'coming-soon', tone: 'info', message: t('header.comingSoon') });

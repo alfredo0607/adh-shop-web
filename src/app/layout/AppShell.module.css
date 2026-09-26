@@ -1,6 +1,12 @@
 .shell {
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  /*
+   * minmax(0, …), not the implicit auto: an auto column grows to the widest
+   * thing inside it, such as the catalogue's scrolling row of categories, and
+   * would push the whole page sideways on a phone.
+   */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr auto;
   min-height: 100dvh;
 }
 
@@ -22,45 +28,6 @@
   transform: none;
 }
 
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  padding-top: env(safe-area-inset-top);
-  background: var(--color-surface-strong);
-  color: var(--color-text-on-strong);
-}
-
-.headerInner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  max-width: var(--page-max-width);
-  min-height: 3.5rem;
-  margin-inline: auto;
-  padding-inline: var(--page-gutter);
-}
-
-.brand {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  color: inherit;
-  text-decoration: none;
-}
-
-.brandName {
-  font-family: var(--font-display);
-  font-size: var(--text-xl);
-  font-weight: 600;
-  letter-spacing: var(--tracking-display);
-}
-
-.brandTagline {
-  color: var(--color-ornament);
-  font-size: var(--text-sm);
-}
-
 .main {
   width: 100%;
   max-width: var(--page-max-width);
@@ -70,12 +37,4 @@
 
 .main:focus {
   outline: none;
-}
-
-.footer {
-  padding: var(--space-5) var(--page-gutter) calc(var(--space-5) + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-  text-align: center;
 }
