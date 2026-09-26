@@ -7,12 +7,14 @@ import { t } from '@/shared/copy/es-CO';
 import styles from './AppShell.module.css';
 import { Footer } from './Footer';
 import { Header } from './Header';
+import { ResumeOrder } from './ResumeOrder';
 
 /** The frame around every screen: header, main content, footer. */
 export const AppShell = ({ children }: { children?: ReactNode }): ReactNode => (
   <div className={styles.shell}>
     {/* A new screen opens at the top; going back returns to where the buyer was. */}
     <ScrollRestoration />
+    <ResumeOrder />
     <a className={styles.skipLink} href="#main">
       {t('nav.skipToContent')}
     </a>

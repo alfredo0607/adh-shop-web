@@ -139,6 +139,26 @@ export const checkoutSlice = createSlice({
       }),
     },
 
+    /**
+     * A fresh idempotency key for the next attempt, after the API refused the
+     * previous one outright (a rejected card). Reusing that key would only
+     * replay the refusal. After a network failure the key is kept instead: the
+     * request may have arrived, and the same key makes a retry safe.
+     */
+    attemptRenewed: {
+      reducer: (state, action: PayloadAction<string>) => {
+        state.idempotencyKey = action.payload;
+      },
+      prepare: () => ({ payload: createIdempotencyKey() }),
+    },
+
+    /** The reservation ran out: the next attempt opens a new transaction. */
+    transactionDiscarded: (state) => {
+      state.transactionId = null;
+      state.idempotencyKey = null;
+      state.paymentStatus = 'idle';
+    },
+
     paymentSubmitting: (state) => {
       state.paymentStatus = 'submitting';
       state.lastError = null;
@@ -176,6 +196,8 @@ export const checkoutSlice = createSlice({
 
 export const {
   orderStarted,
+  attemptRenewed,
+  transactionDiscarded,
   deliverySaved,
   transactionOpened,
   paymentSubmitting,

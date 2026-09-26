@@ -32,6 +32,8 @@ interface CheckoutState {
 | `deliverySaved(details)`                 | Stores validated delivery details                                    |
 | `transactionOpened(transactionId)`       | Records the PENDING transaction and creates a fresh `idempotencyKey` |
 | `paymentSubmitting / Submitted / Failed` | Moves `paymentStatus`; `paymentFailed(code)` stores `lastError`      |
+| `attemptRenewed()`                       | A new idempotency key, after the API refused an attempt outright     |
+| `transactionDiscarded()`                 | Forgets an expired transaction, so the next attempt opens a new one  |
 | `orderClosed()`                          | Resets everything after the buyer returns to the store               |
 
 The payment actions are dispatched by the `payOrder` thunk. None of them carries card data;
