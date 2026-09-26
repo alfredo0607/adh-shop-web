@@ -74,6 +74,10 @@ outlives the page.
 - Stored data is untrusted: the user or an older version of the app may have written it.
   `parsePersistedCheckout` validates the record, and a malformed one is ignored, so the app
   starts empty instead of crashing.
+- What the buyer did in this session wins over what storage holds. The stored record is
+  applied only while the slice is still untouched. When storage is empty, the rehydration
+  payload carries the state from when the store was created. Applying it anyway would undo
+  an action dispatched before rehydration finished.
 - `persistence.rehydrated` becomes `true` once the stored data has been read. The resume logic
   waits for it, so it never routes on the empty initial state.
 - If the browser refuses storage (private mode, quota, blocked cookies), reads return nothing
@@ -82,6 +86,11 @@ outlives the page.
 ## Server state rules
 
 - Every request is an RTK Query endpoint, generated from the API's OpenAPI document.
+- The catalogue is an **infinite query** (`listProductPages`, added in `api/index.ts`). The
+  API's opaque `nextCursor` is the page parameter, so RTK Query keeps the pages together and
+  knows whether there is another one. The page size is 12.
+- The product page refetches its product every time it opens (`refetchOnMountOrArgChange`),
+  so a buyer coming back from a purchase sees the stock that is left.
 - Tags: `Product` (invalidated when an order closes, so stock is fresh on the product page) and
   `Transaction` (per id).
 - The status screen polls `GET /transactions/{id}` every 2 seconds and stops at the first final

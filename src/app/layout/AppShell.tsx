@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Link, Outlet } from 'react-router';
+import { Link, Outlet, ScrollRestoration } from 'react-router';
 
 import { t } from '@/shared/copy/es-CO';
 
@@ -8,6 +8,8 @@ import styles from './AppShell.module.css';
 /** The frame around every screen: header, main content, footer. */
 export const AppShell = ({ children }: { children?: ReactNode }): ReactNode => (
   <div className={styles.shell}>
+    {/* A new screen opens at the top; going back returns to where the buyer was. */}
+    <ScrollRestoration />
     <a className={styles.skipLink} href="#main">
       {t('nav.skipToContent')}
     </a>

@@ -1,6 +1,7 @@
 import type { RouteObject } from 'react-router';
 
 import { HomePage } from '@/features/catalog/HomePage';
+import { ProductPage } from '@/features/catalog/ProductPage';
 
 import { NotFoundScreen, RouteErrorScreen } from './errors/RouteErrorScreen';
 import { AppShell } from './layout/AppShell';
@@ -20,6 +21,7 @@ export const routes: RouteObject[] = [
         errorElement: <RouteErrorScreen />,
         children: [
           { index: true, element: <HomePage /> },
+          { path: 'products/:id', element: <ProductPage /> },
           { path: '*', element: <NotFoundScreen /> },
         ],
       },

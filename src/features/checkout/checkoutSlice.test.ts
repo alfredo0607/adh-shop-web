@@ -117,6 +117,17 @@ describe('checkout slice', () => {
 
     expect(state).toBe(initialCheckoutState);
   });
+
+  it('keeps what the buyer did before rehydration finished over the stored record', () => {
+    const current = reduce(initialCheckoutState, productChosen({ productId: 'new', units: 4 }));
+
+    const state = reduce(current, {
+      type: REMEMBER_REHYDRATED,
+      payload: { checkout: { ...initialCheckoutState, productId: 'old', units: 1 } },
+    });
+
+    expect(state).toBe(current);
+  });
 });
 
 describe('parsePersistedCheckout', () => {

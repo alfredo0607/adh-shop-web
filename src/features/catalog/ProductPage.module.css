@@ -1,0 +1,145 @@
+.product {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.icon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  flex-shrink: 0;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: fit-content;
+  min-height: var(--touch-target);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Mobile first: image above, details below. Side by side from 960 px. */
+.layout {
+  display: grid;
+  /* minmax(0, …): the image's intrinsic 800 px must not widen the column past the screen. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+}
+
+.info {
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+}
+
+.name {
+  font-size: var(--text-3xl);
+}
+
+.price {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.description {
+  max-width: 60ch;
+  color: var(--color-text-muted);
+  font-size: var(--text-lg);
+  line-height: var(--leading-normal);
+}
+
+.soldOut {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+/*
+ * On a phone the subtotal and the pay button stay pinned to the bottom of the
+ * screen, within thumb reach, clear of the home indicator. Only while the
+ * product can be bought: a pinned bar holding a disabled button is noise.
+ */
+.actions {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.pinned {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin-inline: calc(var(--page-gutter) * -1);
+  padding: var(--space-4) var(--page-gutter) calc(var(--space-4) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-background) 92%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.subtotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pay {
+  width: 100%;
+}
+
+.note {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.secure {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-success);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.loading {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.skeletonImage,
+.skeletonText {
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.skeletonImage {
+  aspect-ratio: 1;
+}
+
+.skeletonText {
+  height: 8rem;
+}
+
+@media (min-width: 960px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .actions,
+  .pinned {
+    position: static;
+    margin-inline: 0;
+    padding: var(--space-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+    backdrop-filter: none;
+  }
+
+  .loading {
+    grid-template-columns: 1fr 1fr;
+  }
+}

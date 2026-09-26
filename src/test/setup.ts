@@ -35,6 +35,14 @@ stubElementMethod('setPointerCapture', () => undefined);
 stubElementMethod('releasePointerCapture', () => undefined);
 stubElementMethod('scrollIntoView', () => undefined);
 
+// jsdom has no layout, so it does not implement scrolling. The router's scroll
+// restoration calls it on every navigation.
+Object.defineProperty(window, 'scrollTo', {
+  configurable: true,
+  writable: true,
+  value: () => undefined,
+});
+
 if (!('matchMedia' in window)) {
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
