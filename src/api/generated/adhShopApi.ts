@@ -109,7 +109,7 @@ export type ProductResponse = {
 export type ProductPageResponse = {
   items: ProductResponse[];
   /** Pass back as ?cursor= to read the next page. Null when there is no more. */
-  nextCursor: object | null;
+  nextCursor: string | null;
 };
 export type AmountsResponse = {
   productInCents: number;

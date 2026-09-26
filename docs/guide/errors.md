@@ -85,6 +85,12 @@ and, for API errors, the request id in small print so the buyer can quote it.
 Endpoints opt out of the global toast by declaring that they handle their own errors; the
 payment and transaction endpoints do. Without that flag, a stock error would appear twice.
 
+A screen whose data failed to load, and so has nothing to show, still needs a way forward. It
+renders a neutral empty state with a **Reintentar** button ("No pudimos cargar los
+productos."), and leaves the cause to the toast. The empty state says what is missing; the
+toast says why. The catalogue and the product page work this way. A product that does not
+exist (a `4xx`) is not a failure: the product page shows "Producto no encontrado" and no toast.
+
 ### Crashes (defects)
 
 - A **root error boundary** catches anything, showing a full-page recovery screen.

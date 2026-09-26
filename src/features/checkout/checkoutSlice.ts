@@ -93,6 +93,12 @@ interface RehydrationAction {
 const isRehydration = (action: { type: string }): action is RehydrationAction =>
   action.type === REMEMBER_REHYDRATED;
 
+/** True while nothing has happened to the order in this session. */
+const isUntouched = (state: CheckoutState): boolean =>
+  (Object.keys(initialCheckoutState) as (keyof CheckoutState)[]).every(
+    (key) => state[key] === initialCheckoutState[key],
+  );
+
 export const checkoutSlice = createSlice({
   name: 'checkout',
   initialState: initialCheckoutState,
@@ -153,7 +159,12 @@ export const checkoutSlice = createSlice({
     // Only this slice takes its part of the rehydrated state. Rehydration is
     // asynchronous, and replacing the whole store at that moment would discard
     // whatever happened meanwhile, such as requests already in flight.
+    // What the buyer did in this session is newer than anything stored, so the
+    // stored order only applies while the slice is untouched. It matters because
+    // when storage is empty, the rehydration payload holds the state as it was
+    // when the store was created, which would undo an earlier action.
     builder.addMatcher(isRehydration, (state, action) => {
+      if (!isUntouched(state)) return state;
       return parsePersistedCheckout(action.payload?.checkout) ?? state;
     });
   },

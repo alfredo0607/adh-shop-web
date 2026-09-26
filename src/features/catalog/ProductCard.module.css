@@ -1,0 +1,61 @@
+.card {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-sm);
+  transition:
+    box-shadow var(--duration-base) var(--ease-standard),
+    transform var(--duration-base) var(--ease-standard);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* The focus ring goes around the card the link covers, not the link text. */
+.card:has(.link:focus-visible) {
+  box-shadow: var(--focus-ring);
+}
+
+.image {
+  border-radius: 0;
+}
+
+.body {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.name {
+  font-size: var(--text-lg);
+}
+
+.link {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+/* Stretches the link over the whole card, so the card is one large target. */
+.link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.link:focus-visible {
+  box-shadow: none;
+}
+
+.price {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

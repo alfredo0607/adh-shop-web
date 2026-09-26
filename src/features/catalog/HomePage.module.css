@@ -1,3 +1,8 @@
+.page {
+  display: grid;
+  gap: var(--space-7);
+}
+
 .hero {
   display: grid;
   gap: var(--space-3);

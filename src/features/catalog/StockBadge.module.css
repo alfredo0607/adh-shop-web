@@ -1,0 +1,32 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: fit-content;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+/* Text colours are the palette's dark shades, so each pair stays at WCAG AA. */
+.available {
+  background: color-mix(in srgb, var(--color-chip) 35%, var(--color-surface-raised));
+  color: var(--color-success);
+}
+
+.low {
+  background: color-mix(in srgb, var(--color-premium) 22%, var(--color-surface-raised));
+  color: var(--color-text);
+}
+
+.soldOut {
+  background: var(--color-surface);
+  color: var(--color-danger);
+}

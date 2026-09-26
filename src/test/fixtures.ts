@@ -3,7 +3,7 @@ import type { ProductResponse, TransactionResponse } from '@/api';
 export const aProduct = (overrides: Partial<ProductResponse> = {}): ProductResponse => ({
   id: 'prod-espresso-01',
   name: 'Cafetera espresso Artigiano',
-  description: 'Manual espresso machine with a 1.5 L tank.',
+  description: 'Cafetera espresso manual con tanque de 1,5 L.',
   priceInCents: 8_999_000,
   currency: 'COP',
   imageUrl: 'https://cdn.test/product/prod-espresso-01.webp?signed',
