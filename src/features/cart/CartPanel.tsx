@@ -1,4 +1,4 @@
-import { ShoppingBag, Trash2 } from 'lucide-react';
+import { RefreshCw, ShoppingBag, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 
@@ -25,8 +25,16 @@ export const CartPanel = (): ReactNode => {
   const isOpen = useAppSelector(selectCartIsOpen);
   const lines = useAppSelector(selectCartLines);
   // Only asked for while the panel is open; the catalogue is usually cached already.
-  const { data: products, isLoading } = useListCatalogueQuery(undefined, { skip: !isOpen });
+  const {
+    data: products,
+    isLoading,
+    isError,
+    refetch,
+  } = useListCatalogueQuery(undefined, { skip: !isOpen });
   const cart = viewCart(lines, products ?? []);
+  // Without the catalogue nothing is known about the lines: saying they are
+  // unavailable would ask the buyer to empty a cart that may be fine.
+  const failed = products === undefined && isError;
 
   const close = (): void => {
     dispatch(cartClosed());
@@ -49,7 +57,7 @@ export const CartPanel = (): ReactNode => {
       title={t('cart.title')}
       closeLabel={t('cart.close')}
       footer={
-        empty || isLoading ? undefined : (
+        empty || isLoading || failed ? undefined : (
           <>
             <p className={styles.subtotal}>
               <span>{t('cart.subtotal')}</span>
@@ -79,6 +87,14 @@ export const CartPanel = (): ReactNode => {
         </div>
       ) : isLoading ? (
         <p role="status">{t('cart.loading')}</p>
+      ) : failed ? (
+        <div className={styles.problem} role="alert">
+          <p>{t('cart.loadError')}</p>
+          <Button variant="secondary" onClick={() => void refetch()}>
+            <RefreshCw aria-hidden className={styles.retryIcon} />
+            {t('catalog.retry')}
+          </Button>
+        </div>
       ) : (
         <ul className={styles.lines}>
           {cart.rows.map((row) => (

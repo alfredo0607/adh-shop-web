@@ -244,11 +244,19 @@ export const OrderSummary = (): ReactNode => {
           aria-describedby={termsMissing ? 'terms-error' : undefined}
         >
           {terms.data === undefined ? (
-            <p role="status" className={styles.muted}>
-              {terms.isError
-                ? t('checkout.summary.termsError')
-                : t('checkout.summary.termsLoading')}
-            </p>
+            terms.isError ? (
+              <div className={styles.problem} role="alert">
+                <p>{t('checkout.summary.termsError')}</p>
+                <Button variant="secondary" onClick={() => void terms.refetch()}>
+                  <RefreshCw aria-hidden className={styles.icon} />
+                  {t('catalog.retry')}
+                </Button>
+              </div>
+            ) : (
+              <p role="status" className={styles.muted}>
+                {t('checkout.summary.termsLoading')}
+              </p>
+            )
           ) : (
             <>
               <label className={styles.check}>

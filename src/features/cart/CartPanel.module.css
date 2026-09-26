@@ -123,6 +123,18 @@ a.name:hover {
   font-weight: 600;
 }
 
+.problem {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  color: var(--color-danger);
+}
+
+.retryIcon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
 .browse {
   font-weight: 600;
 }
