@@ -27,3 +27,11 @@ export const PaymentMethods = ({ className }: { className?: string }): ReactNode
     ))}
   </ul>
 );
+
+/** One brand's mark, e.g. inside the card number field once the brand is known. */
+export const CardBrandMark = ({ brand }: { brand: 'visa' | 'mastercard' }): ReactNode => {
+  const { src, width } = BRANDS.find(({ key }) => key === brand)!;
+  return (
+    <img className={styles.mark} src={src} alt={t(`payments.${brand}`)} width={width} height={32} />
+  );
+};

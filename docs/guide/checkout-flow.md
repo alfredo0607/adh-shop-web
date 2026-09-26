@@ -10,7 +10,7 @@ product**. This is how each maps to routes, state and API calls.
 | `/`                     | Catalogue: search, filters, sorting and pages, all in the query string    | 1          |
 | `/products/:id`         | Product page: description, price, stock, units, "Pay with credit card"    | 1          |
 | `/checkout`             | Card and delivery form, in a modal; reached from "buy now" or the cart    | 2          |
-| `/checkout/summary`     | Summary in a backdrop: product amount, base fee, delivery fee, terms      | 3          |
+| `/checkout/resumen`     | Summary in a backdrop: product amount, base fee, delivery fee, terms      | 3          |
 | `/orders/:id`           | Final status: approved with delivery details, or declined with a way back | 4          |
 | back to `/products/:id` | Product page again, with the stock refetched                              | 5          |
 
@@ -66,9 +66,9 @@ On start, after redux-remember rehydrates `checkout`, the app routes by what is 
 | -------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `paymentStatus = submitted`                        | `/orders/{transactionId}` and resumes polling  | The payment is in flight or done; the server knows the outcome                                          |
 | `paymentStatus = submitting`                       | `/orders/{transactionId}`                      | The request may or may not have arrived; polling finds out, and a retry reuses the same idempotency key |
-| A transaction, no payment, reservation still valid | `/checkout/summary`, asking for the card again | Card data is never stored                                                                               |
+| A transaction, no payment, reservation still valid | `/checkout/resumen`, asking for the card again | Card data is never stored                                                                               |
 | A transaction whose reservation expired            | Product page, with a notice                    | The units went back to stock; start again                                                               |
-| Items and delivery, no transaction                 | `/checkout/summary`                            | Nothing reserved yet                                                                                    |
+| Items and delivery, no transaction                 | `/checkout/resumen`                            | Nothing reserved yet                                                                                    |
 | Nothing                                            | `/`                                            |                                                                                                         |
 
 The transaction response carries `paymentSubmitted` and `reservationExpiresAt`, which is

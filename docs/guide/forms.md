@@ -71,6 +71,21 @@ The delivery schema mirrors the API's own rules (see the API's `DeliveryAddress`
 
 ## Components
 
-Form fields are built once in `shared/ui/` (`Field`, `TextInput`, `Select`, `Checkbox`) on Radix
-Primitives where a primitive exists, and wired to react-hook-form through `Controller` only
-where an input is not a native element (Radix Select and Checkbox).
+Form fields are built once in `shared/ui/Field`:
+
+- `Field` wires a label, a control, a hint and an error together: the label names the
+  control, and `aria-describedby` makes screen readers read the hint and the error with it.
+- `TextInput` and `SelectInput` are native elements, styled. A native `<select>` opens the
+  phone's own picker and needs no JavaScript to be accessible, so Radix Select is not used
+  for the installments or the department.
+- Inputs are registered with react-hook-form directly. Only the card number and the expiry
+  go through `Controller`, because they are reformatted as they are typed.
+- The card brand shown inside the number field is watched with `useWatch`, which re-renders
+  that one value instead of the whole form.
+
+## Schemas in practice
+
+- Each field's rules stop at the first that fails (`refine(…, { message, abort: true })`), so
+  an empty field says "required" rather than every rule it breaks.
+- `z.input` is what the form holds while the buyer types; `z.output` is what a valid submit
+  produces, already normalised: digits only, collapsed spaces, lower-case email.

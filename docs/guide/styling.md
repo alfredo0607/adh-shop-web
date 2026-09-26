@@ -55,7 +55,7 @@ are defined in step 1 of the [roadmap](./roadmap.md).
   shadow, motion. Components use tokens, never raw values, so the whole look changes in one
   file.
 - **Layout with flexbox and grid**, as the brief encourages. No CSS framework.
-- **Behaviour from Radix UI Primitives, looks from us.** Dialog, Toast, Checkbox and Select
+- **Behaviour from Radix UI Primitives, looks from us.** Dialog and Toast
   come from Radix Primitives, which ship with no styles at all: they bring focus trapping,
   keyboard support and ARIA, and every pixel is our own CSS on our tokens. Radix Themes is not
   used. The summary backdrop has no Radix equivalent and is built from scratch.

@@ -22,3 +22,16 @@
   width: auto;
   height: 1.5rem;
 }
+
+.mark {
+  width: auto;
+  height: 1.5rem;
+  animation: appear var(--duration-base) var(--ease-standard);
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}

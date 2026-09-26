@@ -1,0 +1,60 @@
+.form {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.section {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  margin-bottom: var(--space-1);
+  padding: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+/* Two fields side by side from 480 px; one above the other on a small phone. */
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+.actions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.formError {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.secure {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.lock {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.2rem;
+  color: var(--color-success);
+}
+
+@media (min-width: 480px) {
+  .row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -2,6 +2,9 @@ import type { RouteObject } from 'react-router';
 
 import { HomePage } from '@/features/catalog/HomePage';
 import { ProductPage } from '@/features/catalog/ProductPage';
+import { CheckoutForm } from '@/features/checkout/CheckoutForm';
+import { CheckoutLayout } from '@/features/checkout/CheckoutLayout';
+import { OrderSummary } from '@/features/checkout/OrderSummary';
 
 import { NotFoundScreen, RouteErrorScreen } from './errors/RouteErrorScreen';
 import { AppShell } from './layout/AppShell';
@@ -22,6 +25,14 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, element: <HomePage /> },
           { path: 'products/:id', element: <ProductPage /> },
+          {
+            path: 'checkout',
+            element: <CheckoutLayout />,
+            children: [
+              { index: true, element: <CheckoutForm /> },
+              { path: 'resumen', element: <OrderSummary /> },
+            ],
+          },
           { path: '*', element: <NotFoundScreen /> },
         ],
       },

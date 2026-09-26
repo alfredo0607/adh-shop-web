@@ -1,7 +1,6 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import type { RouteObject } from 'react-router';
 
 import { selectNotifications } from '@/app/notifications/notificationsSlice';
 import { routes } from '@/app/router';
@@ -13,12 +12,6 @@ import { renderRoute } from '@/test/renderRoute';
 import { API, server } from '@/test/server';
 
 const ESPRESSO = '/products/prod-espresso-01';
-
-/** The app's routes, plus a stand-in for the checkout screen that step 4 adds. */
-const withCheckout: RouteObject[] = [
-  { path: '/checkout', element: <p>Checkout screen</p> },
-  ...routes,
-];
 
 const increase = () => screen.getByRole('button', { name: 'Agregar una unidad' });
 const decrease = () => screen.getByRole('button', { name: 'Quitar una unidad' });
@@ -71,13 +64,15 @@ describe('product page', () => {
   });
 
   it('starts the order with the chosen units and opens the checkout', async () => {
-    const { store } = renderRoute(ESPRESSO, withCheckout);
+    const { store } = renderRoute(ESPRESSO, routes);
     await screen.findByRole('heading', { level: 1, name: /./ });
 
     await userEvent.click(increase());
     await userEvent.click(screen.getByRole('button', { name: 'Pagar con tarjeta de crédito' }));
 
-    expect(await screen.findByText('Checkout screen')).toBeVisible();
+    expect(
+      await screen.findByRole('dialog', { name: 'Pago con tarjeta de crédito' }),
+    ).toBeVisible();
     expect(selectCheckout(store.getState())).toMatchObject({
       items: [{ productId: 'prod-espresso-01', units: 2 }],
       source: 'buy-now',
@@ -94,7 +89,10 @@ describe('product page', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Agregar al carrito' }));
 
     const cart = await screen.findByRole('dialog', { name: 'Tu carrito' });
-    expect(within(cart).getByRole('link', { name: 'Cafetera espresso Artigiano' })).toBeVisible();
+    // The cart reads the catalogue once it opens.
+    expect(
+      await within(cart).findByRole('link', { name: 'Cafetera espresso Artigiano' }),
+    ).toBeVisible();
     expect(store.getState().cart.lines).toEqual([{ productId: 'prod-espresso-01', units: 2 }]);
     // While the cart is open, the page behind it is hidden from assistive technology.
     expect(
