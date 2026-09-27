@@ -162,8 +162,10 @@ const ProductDetails = ({ product }: { product: ProductResponse }): ReactNode =>
                 {t('product.pay')}
               </Button>
             </div>
-            <p className={styles.note}>{t('product.feesNote')}</p>
           </div>
+          {/* Outside the pinned bar: Safari's floating toolbar covers more than the
+              safe-area inset, so the bar ends with its buttons, which stay visible. */}
+          <p className={styles.note}>{t('product.feesNote')}</p>
 
           <div className={styles.payments}>
             <p className={styles.secure}>
