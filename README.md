@@ -81,7 +81,7 @@ enforces behind these screens are in the
 | Mobile first, iPhone SE (2020) as the smallest reference |   ✅   | Designed at 375 px, verified down to 320 px with no horizontal scroll; wider layouts from 600 px and 960 px                                   |
 | Resilient to a page refresh, storing progress securely   |   ✅   | The order and the cart are persisted and validated when read back; card data never is. A reload during a payment resumes on its status screen |
 | Flexbox or grid, any CSS approach                        |   ✅   | CSS Modules on design tokens, flexbox and grid; no CSS framework. Radix Primitives brings behaviour only                                      |
-| Unit tests with Jest, coverage above 80%                 |   ✅   | 294 tests; **98.7% statements, 93.4% branches** ([details](#tests-and-coverage)); CI fails below 80%                                          |
+| Unit tests with Jest, coverage above 80%                 |   ✅   | 294 tests; **98.3% statements, 93.2% branches** ([details](#tests-and-coverage)); CI fails below 80%                                          |
 | Deployed to the cloud                                    |   ✅   | S3 and CloudFront on AWS, with its own certificate and Content-Security-Policy, released on every merge to `main`                             |
 | README with the coverage results                         |   ✅   | This file                                                                                                                                     |
 
@@ -144,10 +144,10 @@ pnpm test:cov
 
 | Metric     |   Coverage |     Covered |
 | ---------- | ---------: | ----------: |
-| Statements | **98.68%** | 1279 / 1296 |
-| Branches   | **93.41%** |   653 / 699 |
-| Functions  | **98.57%** |   277 / 281 |
-| Lines      | **99.45%** | 1086 / 1092 |
+| Statements | **98.31%** | 1284 / 1306 |
+| Branches   | **93.15%** |   653 / 701 |
+| Functions  | **97.87%** |   277 / 283 |
+| Lines      | **99.45%** | 1087 / 1093 |
 
 **294 tests in 19 suites**, all passing. The 80% threshold lives in `jest.config.js`, so
 the run fails on its own if coverage drops, and every pull request shows this table in its
@@ -202,18 +202,19 @@ pnpm install
 pnpm dev            # http://localhost:5173, with /api proxied to the ADH Shop API
 ```
 
-| Command             | What it does                                                       |
-| ------------------- | ------------------------------------------------------------------ |
-| `pnpm dev`          | Development server with hot reload                                 |
-| `pnpm build`        | Typecheck, then the production bundle in `dist/`                   |
-| `pnpm preview`      | Serves the production bundle locally                               |
-| `pnpm lint`         | ESLint, with type-aware rules, accessibility and import boundaries |
-| `pnpm typecheck`    | TypeScript, no output                                              |
-| `pnpm format:check` | Prettier, as CI runs it                                            |
-| `pnpm test`         | Jest                                                               |
-| `pnpm test:cov`     | Jest with coverage; fails below 80%                                |
-| `pnpm api:schema`   | Downloads the API's OpenAPI document into `src/api/openapi.json`   |
-| `pnpm api:generate` | Regenerates the RTK Query endpoints and types from that snapshot   |
+| Command             | What it does                                                                                          |
+| ------------------- | ----------------------------------------------------------------------------------------------------- |
+| `pnpm dev`          | Development server with hot reload                                                                    |
+| `pnpm build`        | Typecheck, then the production bundle in `dist/`                                                      |
+| `pnpm preview`      | Serves the production bundle locally                                                                  |
+| `pnpm check`        | Every CI gate in order: formatting, lint, types, tests with coverage, build                           |
+| `pnpm lint`         | ESLint, with type-aware rules, accessibility and import boundaries; `lint:fix` applies the safe fixes |
+| `pnpm typecheck`    | TypeScript, no output                                                                                 |
+| `pnpm format`       | Prettier over the repository; `format:check` only reports, as CI does                                 |
+| `pnpm test`         | Jest; `test:watch` reruns on change                                                                   |
+| `pnpm test:cov`     | Jest with coverage; fails below 80%                                                                   |
+| `pnpm api:schema`   | Downloads the API's OpenAPI document into `src/api/openapi.json`                                      |
+| `pnpm api:generate` | Regenerates the RTK Query endpoints and types from that snapshot                                      |
 
 ## Configuration
 
